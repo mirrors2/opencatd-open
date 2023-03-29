@@ -1,0 +1,60 @@
+name: Docker Image CI
+#触发器设置
+on:
+  push:
+    branches:
+      - main
+      - dev
+    tags:
+      - '*'
+  pull_request:
+    branches: [ "main","dev" ]
+
+
+#项目任务，任务之间可以并行调度
+jobs:
+
+  build:
+  #选择云端运行的环境
+    runs-on: ubuntu-latest
+    steps:
+    #uses代表使用一个模块，此处使用的是checkout模块，将github项目文件导入到当前环境中
+    - uses: actions/checkout@v3
+    #使用with跟在后面来为前面的模块输入参数
+      with:
+        submodules: 'true'
+    - name: Get current date
+      id: date
+      run: echo "::set-output name=today::$(date +'%Y%m%d')"        
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+     #这里用到了github的secrets功能，避免账户和密码随仓库泄露
+       username: ${{ secrets.DOCKERHUB_USERNAME }}
+       password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Build and push
+      #导入这个模块来完成自动编译和推送
+      uses: docker/build-push-action@v3
+      with:
+          context: .
+          file: ./docker/Dockerfile
+          push: true
+          #在这里通过加入需要编译的平台和前面配好的QEMU，buildx来达到多平台编译
+          platforms: linux/amd64,linux/arm64
+          #指定用户/仓库名
+          tags: |
+            ${{ github.repository }}:${{ github.ref_slug }}
+            ${{ github.repository }}:latest
+            ${{ github.repository }}:${{ steps.date.outputs.today }}
+    - name: Docker Hub Description
+      #这里是通过md文件自动生成dockerhub描述的模块，也可以不需要
+      uses: peter-evans/dockerhub-description@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        repository: ${{ github.repository }}
+        readme-filepath: ./README.md
