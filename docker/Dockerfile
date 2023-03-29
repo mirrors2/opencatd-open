@@ -4,7 +4,7 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 WORKDIR /build
 COPY . /build
 ENV GO111MODULE=on
-ENV GOPROXY=https://goproxy.cn,direct
+# ENV GOPROXY=https://goproxy.cn,direct
 CMD [ "go mod download" ]
 RUN make build
 
