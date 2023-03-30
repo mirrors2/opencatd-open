@@ -1,0 +1,10 @@
+version: '3.7'
+services: 
+  opencatd:
+    image: mirrors2/opencatd-open
+    container_name: opencatd-open 
+    restart: unless-stopped
+    ports:
+      - 80:80
+    volumes:
+      - /etc/opencatd:/app/db
