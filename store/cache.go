@@ -24,13 +24,16 @@ func LoadKeysCache() {
 		log.Println(err)
 		return
 	}
-	for _, key := range keys {
-		KeysCache.Set(key.Key, true, cache.NoExpiration)
+	for idx, key := range keys {
+		KeysCache.Set(to.String(idx), key.Key, cache.NoExpiration)
 	}
 }
 
 func FromKeyCacheRandomItem() string {
 	items := KeysCache.Items()
+	if len(items) == 1 {
+		return items[to.String(0)].Object.(string)
+	}
 	idx := rand.Intn(len(items))
 	item := items[to.String(idx)]
 	return item.Object.(string)

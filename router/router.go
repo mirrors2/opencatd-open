@@ -155,7 +155,7 @@ func HandleAddKey(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, k)
+	c.JSON(http.StatusOK, k)
 }
 
 func HandleDelKey(c *gin.Context) {
@@ -191,7 +191,7 @@ func HandleAddUser(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, u)
+	c.JSON(http.StatusOK, u)
 }
 
 func HandleDelUser(c *gin.Context) {
@@ -262,19 +262,19 @@ func HandleProy(c *gin.Context) {
 	// 创建 API 请求
 	req, err := http.NewRequest(c.Request.Method, baseUrl+c.Request.URL.Path, c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
 	req.Header = c.Request.Header
 	if store.KeysCache.ItemCount() == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "No Api-Key Available"})
+		c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
 		return
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
 
 	resp, err := client.Do(req)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
 	defer resp.Body.Close()
