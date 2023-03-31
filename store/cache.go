@@ -19,6 +19,7 @@ func init() {
 }
 
 func LoadKeysCache() {
+	KeysCache = cache.New(cache.NoExpiration, cache.NoExpiration)
 	keys, err := GetAllKeys()
 	if err != nil {
 		log.Println(err)
@@ -40,6 +41,7 @@ func FromKeyCacheRandomItem() string {
 }
 
 func LoadAuthCache() {
+	AuthCache = cache.New(cache.NoExpiration, cache.NoExpiration)
 	users, err := GetAllUsers()
 	if err != nil {
 		log.Println(err)
