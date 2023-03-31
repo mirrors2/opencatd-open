@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"opencatd-open/store"
@@ -232,10 +233,6 @@ func HandleProy(c *gin.Context) {
 	var localuser bool
 	auth := c.Request.Header.Get("Authorization")
 	if len(auth) > 7 && auth[:7] == "Bearer " {
-		if len(auth[7:]) < 1 {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			return
-		}
 		if store.IsExistAuthCache(auth[7:]) {
 			localuser = true
 		}
@@ -259,20 +256,22 @@ func HandleProy(c *gin.Context) {
 	// 创建 API 请求
 	req, err := http.NewRequest(c.Request.Method, baseUrl+c.Request.URL.Path, c.Request.Body)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
 	req.Header = c.Request.Header
-	if store.KeysCache.ItemCount() == 0 {
-		c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
-		return
-	}
 	if localuser {
+		if store.KeysCache.ItemCount() == 0 {
+			c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
+			return
+		}
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
@@ -300,6 +299,7 @@ func HandleProy(c *gin.Context) {
 
 	bodyRes, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
@@ -310,6 +310,7 @@ func HandleProy(c *gin.Context) {
 	// 返回 API 响应主体
 	c.Writer.WriteHeader(resp.StatusCode)
 	if _, err := io.Copy(c.Writer, resbody); err != nil {
+		log.Println(err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
