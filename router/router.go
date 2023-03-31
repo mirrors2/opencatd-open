@@ -231,15 +231,14 @@ func GenerateToken() string {
 func HandleProy(c *gin.Context) {
 	var localuser bool
 	auth := c.Request.Header.Get("Authorization")
-	if auth[:7] == "Bearer " {
+	if len(auth) > 7 && auth[:7] == "Bearer " {
 		if len(auth[7:]) < 1 {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
-		if !store.IsExistAuthCache(auth[7:]) {
-			localuser = false
+		if store.IsExistAuthCache(auth[7:]) {
+			localuser = true
 		}
-		localuser = true
 	}
 	client := http.DefaultClient
 	tr := &http.Transport{
