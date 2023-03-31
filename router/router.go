@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"opencatd-open/store"
 	"time"
 
@@ -314,4 +315,39 @@ func HandleProy(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
+}
+
+func HandleReverseProxy(c *gin.Context) {
+	proxy := &httputil.ReverseProxy{
+		Director: func(req *http.Request) {
+			req.URL.Scheme = "https"
+			req.URL.Host = "api.openai.com"
+			// req.Header.Set("Authorization", "Bearer YOUR_API_KEY_HERE")
+		},
+	}
+
+	var localuser bool
+	auth := c.Request.Header.Get("Authorization")
+	if len(auth) > 7 && auth[:7] == "Bearer " {
+		if store.IsExistAuthCache(auth[7:]) {
+			localuser = true
+		}
+	}
+
+	// req, err := http.NewRequest(c.Request.Method, baseUrl+c.Request.URL.Path, c.Request.Body)
+	// if err != nil {
+	// 	c.JSON(http.StatusOK, gin.H{"error": err.Error()})
+	// 	return
+	// }
+	// req.Header = c.Request.Header
+	if localuser {
+		if store.KeysCache.ItemCount() == 0 {
+			c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
+			return
+		}
+		c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
+	}
+
+	proxy.ServeHTTP(c.Writer, c.Request)
+
 }

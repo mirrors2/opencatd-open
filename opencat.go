@@ -41,9 +41,9 @@ func main() {
 
 	// 初始化用户
 	r.POST("/1/users/init", router.Handleinit)
-	r.POST("/v1/chat/completions", router.HandleProy)
-	r.GET("/v1/models", router.HandleProy)
-	r.GET("/v1/dashboard/billing/credit_grants", router.HandleProy)
+	r.POST("/v1/chat/completions", router.HandleReverseProxy)
+	r.GET("/v1/models", router.HandleReverseProxy)
+	r.GET("/v1/dashboard/billing/credit_grants", router.HandleReverseProxy)
 
 	r.Run(":80")
 }
