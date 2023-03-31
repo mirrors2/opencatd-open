@@ -229,6 +229,7 @@ func GenerateToken() string {
 }
 
 func HandleProy(c *gin.Context) {
+	var localuser bool
 	auth := c.Request.Header.Get("Authorization")
 	if auth[:7] == "Bearer " {
 		if len(auth[7:]) < 1 {
@@ -236,12 +237,9 @@ func HandleProy(c *gin.Context) {
 			return
 		}
 		if !store.IsExistAuthCache(auth[7:]) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			return
+			localuser = false
 		}
-	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
+		localuser = true
 	}
 	client := http.DefaultClient
 	tr := &http.Transport{
@@ -270,7 +268,9 @@ func HandleProy(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
 		return
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
+	if localuser {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {

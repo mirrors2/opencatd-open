@@ -41,7 +41,8 @@ func main() {
 
 	// 初始化用户
 	r.POST("/1/users/init", router.Handleinit)
-	r.POST("/v1/chat/completions", router.HandleProy)
+	r.Any("/v1/chat/completions", router.HandleProy)
+	r.Any("/", router.HandleProy)
 
 	r.Run(":80")
 }
