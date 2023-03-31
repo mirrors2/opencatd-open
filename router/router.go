@@ -234,9 +234,7 @@ func HandleProy(c *gin.Context) {
 	var localuser bool
 	auth := c.Request.Header.Get("Authorization")
 	if len(auth) > 7 && auth[:7] == "Bearer " {
-		if store.IsExistAuthCache(auth[7:]) {
-			localuser = true
-		}
+		localuser = store.IsExistAuthCache(auth[7:])
 	}
 	client := http.DefaultClient
 	tr := &http.Transport{
@@ -346,20 +344,21 @@ func HandleReverseProxy(c *gin.Context) {
 		localuser = store.IsExistAuthCache(auth[7:])
 	}
 
-	// req, err := http.NewRequest(c.Request.Method, baseUrl+c.Request.URL.Path, c.Request.Body)
-	// if err != nil {
-	// 	c.JSON(http.StatusOK, gin.H{"error": err.Error()})
-	// 	return
-	// }
-	// req.Header = c.Request.Header
+	req, err := http.NewRequest(c.Request.Method, c.Request.URL.Path, c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
+		return
+	}
+	req.Header = c.Request.Header
 	if localuser {
 		if store.KeysCache.ItemCount() == 0 {
 			c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
 			return
 		}
-		c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
+		// c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
 	}
 
-	proxy.ServeHTTP(c.Writer, c.Request)
+	proxy.ServeHTTP(c.Writer, req)
 
 }
