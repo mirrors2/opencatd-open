@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"opencatd-open/store"
 	"time"
 
@@ -229,19 +231,10 @@ func GenerateToken() string {
 }
 
 func HandleProy(c *gin.Context) {
+	var localuser bool
 	auth := c.Request.Header.Get("Authorization")
-	if auth[:7] == "Bearer " {
-		if len(auth[7:]) < 1 {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			return
-		}
-		if !store.IsExistAuthCache(auth[7:]) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			return
-		}
-	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
+	if len(auth) > 7 && auth[:7] == "Bearer " {
+		localuser = store.IsExistAuthCache(auth[7:])
 	}
 	client := http.DefaultClient
 	tr := &http.Transport{
@@ -262,18 +255,22 @@ func HandleProy(c *gin.Context) {
 	// 创建 API 请求
 	req, err := http.NewRequest(c.Request.Method, baseUrl+c.Request.URL.Path, c.Request.Body)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
 	req.Header = c.Request.Header
-	if store.KeysCache.ItemCount() == 0 {
-		c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
-		return
+	if localuser {
+		if store.KeysCache.ItemCount() == 0 {
+			c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
+			return
+		}
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
 
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
@@ -301,6 +298,7 @@ func HandleProy(c *gin.Context) {
 
 	bodyRes, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
@@ -311,7 +309,56 @@ func HandleProy(c *gin.Context) {
 	// 返回 API 响应主体
 	c.Writer.WriteHeader(resp.StatusCode)
 	if _, err := io.Copy(c.Writer, resbody); err != nil {
+		log.Println(err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
+}
+
+func HandleReverseProxy(c *gin.Context) {
+	proxy := &httputil.ReverseProxy{
+		Director: func(req *http.Request) {
+			req.URL.Scheme = "https"
+			req.URL.Host = "api.openai.com"
+			// req.Header.Set("Authorization", "Bearer YOUR_API_KEY_HERE")
+		},
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	var localuser bool
+	auth := c.Request.Header.Get("Authorization")
+	if len(auth) > 7 && auth[:7] == "Bearer " {
+		log.Println(store.IsExistAuthCache(auth[7:]))
+		localuser = store.IsExistAuthCache(auth[7:])
+	}
+
+	req, err := http.NewRequest(c.Request.Method, c.Request.URL.Path, c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
+		return
+	}
+	req.Header = c.Request.Header
+	if localuser {
+		if store.KeysCache.ItemCount() == 0 {
+			c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
+			return
+		}
+		// c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
+	}
+
+	proxy.ServeHTTP(c.Writer, req)
+
 }
