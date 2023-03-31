@@ -324,14 +324,26 @@ func HandleReverseProxy(c *gin.Context) {
 			req.URL.Host = "api.openai.com"
 			// req.Header.Set("Authorization", "Bearer YOUR_API_KEY_HERE")
 		},
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+		},
 	}
 
 	var localuser bool
 	auth := c.Request.Header.Get("Authorization")
 	if len(auth) > 7 && auth[:7] == "Bearer " {
-		if store.IsExistAuthCache(auth[7:]) {
-			localuser = true
-		}
+		log.Println(store.IsExistAuthCache(auth[7:]))
+		localuser = store.IsExistAuthCache(auth[7:])
 	}
 
 	// req, err := http.NewRequest(c.Request.Method, baseUrl+c.Request.URL.Path, c.Request.Body)
