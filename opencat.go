@@ -1,13 +1,27 @@
 package main
 
 import (
+	"log"
 	"opencatd-open/router"
-	_ "opencatd-open/store"
+	"opencatd-open/store"
+	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func main() {
+	args := os.Args[1:]
+	if len(args) > 0 && args[0] == "reset_root" {
+		log.Println("reset root token...")
+		ntoken := uuid.NewString()
+		if err := store.UpdateUser(uint(1), ntoken); err != nil {
+			log.Fatalln(err)
+			return
+		}
+		log.Println("new root token:", ntoken)
+		return
+	}
 
 	r := gin.Default()
 	group := r.Group("/1")
