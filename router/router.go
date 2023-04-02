@@ -53,10 +53,26 @@ func AuthMiddleware() gin.HandlerFunc {
 			rootToken = u.Token
 		}
 		token := c.GetHeader("Authorization")
-		if token == "" || token[:7] != "Bearer " || token[7:] != rootToken {
+		if token == "" || token[:7] != "Bearer " {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
+		}
+		if token[7:] != rootToken {
+			u, err := store.GetUserByID(uint(1))
+			if err != nil {
+				log.Println(err)
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+				c.Abort()
+				return
+			}
+			if token[:7] != u.Token {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+				c.Abort()
+				return
+			}
+			rootToken = u.Token
+			store.LoadAuthCache()
 		}
 		// 可以在这里对 token 进行验证并检查权限
 
@@ -71,7 +87,7 @@ func Handleinit(c *gin.Context) {
 			u := store.User{Name: "root", Token: uuid.NewString()}
 			u.ID = 1
 			if err := store.CreateUser(&u); err != nil {
-				c.JSON(http.StatusOK, gin.H{
+				c.JSON(http.StatusForbidden, gin.H{
 					"error": err.Error(),
 				})
 				return
@@ -95,7 +111,7 @@ func Handleinit(c *gin.Context) {
 		return
 	}
 	if user.ID == uint(1) {
-		c.JSON(http.StatusOK, gin.H{
+		c.JSON(http.StatusForbidden, gin.H{
 			"error": "super user already exists, use cli to reset password",
 		})
 	}
@@ -214,13 +230,16 @@ func HandleResetUserToken(c *gin.Context) {
 	id := to.Int(c.Param("id"))
 
 	if err := store.UpdateUser(uint(id), uuid.NewString()); err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 	u, err := store.GetUserByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
+	}
+	if u.ID == uint(1) {
+		rootToken = u.Token
 	}
 	c.JSON(http.StatusOK, u)
 }
