@@ -30,13 +30,22 @@ or
 ```
 wget https://github.com/mirrors2/opencatd-open/raw/main/docker/docker-compose.yml
 ```
+## reset root token
+```
+docker exec -it opencatd-open ./opencatd reset_root 
+```
 
 ## Q&A
 关于证书?
 - docker部署会白白占用掉VPS的80，443很不河里,建议用Nginx/Caddy/Traefik等反代并自动管理HTTPS证书.
 
 没有服务器?  
-- 可以白嫖一些免费的容器托管服务:如:koyeb 或者其他
+- 可以白嫖一些免费的容器托管服务:如:
+  - [Zeabur](https://zeabur.com/zh-CN)
+  - [koyeb](https://koyeb.io/) 
+  - [Railway](https://railway.app/ )
+  - [Fly.io](https://fly.io/)
+  - 或者其他
 
 # License
 
