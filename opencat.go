@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"opencatd-open/router"
 	"opencatd-open/store"
 	"os"
@@ -22,7 +23,7 @@ func main() {
 		log.Println("new root token:", ntoken)
 		return
 	}
-
+	port := os.Getenv("PORT")
 	r := gin.Default()
 	group := r.Group("/1")
 	{
@@ -59,6 +60,13 @@ func main() {
 	r.POST("/v1/chat/completions", router.HandleProy)
 	r.GET("/v1/models", router.HandleProy)
 	r.GET("/v1/dashboard/billing/credit_grants", router.HandleProy)
+	r.GET("/", func(c *gin.Context) {
+		c.Writer.WriteHeader(http.StatusOK)
+		c.Writer.WriteString(`<h1><a href="https://github.com/mirrors2/opencatd-open" >opencatd-open</a> available</h1>Api-Keys:<a href=https://platform.openai.com/account/api-keys >https://platform.openai.com/account/api-keys</a>`)
+	})
 
-	r.Run(":80")
+	if port == "" {
+		port = "80"
+	}
+	r.Run(":" + port)
 }
