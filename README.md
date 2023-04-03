@@ -41,9 +41,9 @@ docker exec -it opencatd-open ./opencatd reset_root
 
 没有服务器?  
 - 可以白嫖一些免费的容器托管服务:如:
+  - [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ppAoCV?referralCode=TW5RNa)
   - [Zeabur](https://zeabur.com/zh-CN)
   - [koyeb](https://koyeb.io/) 
-  - [Railway](https://railway.app/ )
   - [Fly.io](https://fly.io/)
   - 或者其他
 
