@@ -381,3 +381,42 @@ func HandleReverseProxy(c *gin.Context) {
 	proxy.ServeHTTP(c.Writer, req)
 
 }
+
+type Usage struct {
+	Cost      string `json:"cost"`
+	UserID    int    `json:"userId"`
+	TotalUnit int    `json:"totalUnit"`
+}
+
+func HandleUsage(c *gin.Context) {
+	fromStr := c.Query("from")
+	toStr := c.Query("to")
+
+	from, err := time.Parse("2006-01-02", fromStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid from date format"})
+		return
+	}
+
+	to, err := time.Parse("2006-01-02", toStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid to date format"})
+		return
+	}
+
+	err = store.QueryUsage(from, to)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Mock data for testing
+	usage := Usage{
+		Cost:      "0.000076",
+		UserID:    1,
+		TotalUnit: 38,
+	}
+
+	c.JSON(200, []Usage{usage})
+
+}

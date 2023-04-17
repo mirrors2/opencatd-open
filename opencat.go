@@ -38,6 +38,8 @@ func main() {
 		// 获取所有用户信息
 		group.GET("/users", router.HandleUsers)
 
+		group.GET("/usages", router.HandleUsage)
+
 		// 添加Key
 		group.POST("/keys", router.HandleAddKey)
 
