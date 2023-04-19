@@ -1,7 +1,7 @@
 package router
 
 import (
-	"bytes"
+	"bufio"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"opencatd-open/store"
+	"strings"
 	"time"
 
 	"github.com/Sakurasan/to"
@@ -20,8 +21,10 @@ import (
 )
 
 var (
-	rootToken string
-	baseUrl   = "https://api.openai.com"
+	rootToken     string
+	baseUrl       = "https://api.openai.com"
+	GPT3Dot5Turbo = "gpt-3.5-turbo"
+	GPT4          = "gpt-4"
 )
 
 type User struct {
@@ -44,12 +47,7 @@ type Key struct {
 type ChatCompletionMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
-
-	// This property isn't in the official documentation, but it's in
-	// the documentation for the official library for python:
-	// - https://github.com/openai/openai-python/blob/main/chatml.md
-	// - https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-	Name string `json:"name,omitempty"`
+	Name    string `json:"name,omitempty"`
 }
 
 type ChatCompletionRequest struct {
@@ -296,6 +294,7 @@ func GenerateToken() string {
 
 func HandleProy(c *gin.Context) {
 	var localuser bool
+	var isStream bool
 	auth := c.Request.Header.Get("Authorization")
 	if len(auth) > 7 && auth[:7] == "Bearer " {
 		localuser = store.IsExistAuthCache(auth[7:])
@@ -316,8 +315,18 @@ func HandleProy(c *gin.Context) {
 	}
 	client.Transport = tr
 
+	if c.Request.URL.Path == "/v1/chat/completions" {
+		var chatreq = ChatCompletionRequest{}
+		if err := c.BindJSON(&chatreq); err != nil {
+			return
+			// c.AbortWithError(http.StatusBadRequest,)
+		}
+		isStream = chatreq.Stream
+
+	}
+
 	// 创建 API 请求
-	req, err := http.NewRequest(c.Request.Method, baseUrl+c.Request.URL.Path, c.Request.Body)
+	req, err := http.NewRequest(c.Request.Method, baseUrl+c.Request.RequestURI, c.Request.Body)
 	if err != nil {
 		log.Println(err)
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
@@ -360,17 +369,18 @@ func HandleProy(c *gin.Context) {
 	resp.Header.Del("content-security-policy-report-only")
 	resp.Header.Del("clear-site-data")
 
-	bodyRes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		return
+	// bodyRes, err := io.ReadAll(resp.Body)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+	// 	return
+	// }
+	reader := bufio.NewReader(resp.Body)
+
+	if resp.StatusCode == 200 && isStream {
+		//todo
 	}
-	if resp.StatusCode == 200 {
-		// todo
-		log.Println(string(bodyRes))
-	}
-	resbody := io.NopCloser(bytes.NewReader(bodyRes))
+	resbody := io.NopCloser(reader)
 	// 返回 API 响应主体
 	c.Writer.WriteHeader(resp.StatusCode)
 	if _, err := io.Copy(c.Writer, resbody); err != nil {
@@ -451,4 +461,41 @@ func HandleUsage(c *gin.Context) {
 	}
 
 	c.JSON(200, usage)
+}
+
+// todo
+func streamEvent(reader *bufio.Reader) error {
+
+	lineChan := make(chan string, 1)
+
+	timeout := time.AfterFunc(60*time.Second, func() {
+		lineChan <- ""
+	})
+
+	go func() {
+		line, err := reader.ReadString('\n')
+		if err == nil {
+			lineChan <- line
+		}
+	}()
+
+	line := <-lineChan
+
+	timeout.Stop()
+	if line == "" {
+
+	}
+
+	if strings.HasPrefix(line, "data:") {
+		line = strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+		//log.Println("Received data:", line)
+
+		if line == "[DONE]" {
+
+		}
+
+		line = strings.TrimSpace(line)
+
+	}
+	return nil
 }
