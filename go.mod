@@ -4,16 +4,20 @@ go 1.19
 
 require (
 	github.com/Sakurasan/to v0.0.0-20180919163141-e72657dd7c7d
+	github.com/duke-git/lancet/v2 v2.1.19
 	github.com/gin-gonic/gin v1.9.0
 	github.com/glebarez/sqlite v1.7.0
 	github.com/google/uuid v1.3.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/pkoukk/tiktoken-go v0.1.1-0.20230418101013-cae809389480
+	github.com/sashabaranov/go-openai v1.9.0
 	gorm.io/gorm v1.24.6
 )
 
 require (
 	github.com/bytedance/sonic v1.8.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
+	github.com/dlclark/regexp2 v1.8.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/glebarez/go-sqlite v1.20.3 // indirect
