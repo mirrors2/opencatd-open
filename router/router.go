@@ -410,14 +410,25 @@ func HandleProy(c *gin.Context) {
 			chatlog.TotalTokens = chatres.Usage.TotalTokens
 		}
 		chatlog.Cost = Cost(chatlog.Model, chatlog.PromptCount, chatlog.CompletionCount)
-		store.Record(&chatlog)
-		// todo insert usage && calc daily_usage
+		if err := store.Record(&chatlog); err != nil {
+			log.Println(err)
+		}
+		if err := store.SumDaily(chatlog.UserID); err != nil {
+			log.Println(err)
+		}
 
 	}
-	resbody := io.NopCloser(reader)
-	// 返回 API 响应主体
 	c.Writer.WriteHeader(resp.StatusCode)
-	if _, err := io.Copy(c.Writer, resbody); err != nil {
+	if localuser {
+		// 返回 API 响应主体
+		if _, err := io.Copy(c.Writer, resbuf); err != nil {
+			log.Println(err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			return
+		}
+	}
+	// 返回 API 响应主体
+	if _, err := io.Copy(c.Writer, io.NopCloser(reader)); err != nil {
 		log.Println(err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return

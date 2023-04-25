@@ -1,7 +1,6 @@
 package store
 
 import (
-	"log"
 	"time"
 
 	"github.com/Sakurasan/to"
@@ -39,11 +38,11 @@ func (Usage) TableName() string {
 }
 
 type Summary struct {
-	UserId int
-	// SumPromptUnits     int
-	// SumCompletionUnits int
-	SumTotalUnit int
-	SumCost      float64
+	UserId             int     `gorm:"column:user_id"`
+	SumPromptUnits     int     `gorm:"column:sum_prompt_units"`
+	SumCompletionUnits int     `gorm:"column:sum_completion_units"`
+	SumTotalUnit       int     `gorm:"column:sum_total_unit"`
+	SumCost            float64 `gorm:"column:sum_cost"`
 }
 type CalcUsage struct {
 	UserID    int    `json:"userId,omitempty"`
@@ -93,22 +92,25 @@ func Record(chatlog *Tokens) (err error) {
 
 }
 
-func SumDaily(userid string) ([]Summary, error) {
+func SumDaily(userid int) error {
 	var count int64
 	err := usage.Model(&DailyUsage{}).Where("user_id = ? and date = ?", userid, time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)).Count(&count).Error
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 	if count == 0 {
-
+		if err := insertSumDaily(userid); err != nil {
+			return err
+		}
 	} else {
-
+		if err := updateSumDaily(userid, time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)); err != nil {
+			return err
+		}
 	}
-
-	return nil, nil
+	return nil
 }
 
-func insertSumDaily(uid string) error {
+func insertSumDaily(uid int) error {
 	nowstr := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
 	err := usage.Exec(`INSERT INTO daily_usages
 		(user_id, date, sku, prompt_units, completion_units, total_unit, cost)
@@ -129,23 +131,15 @@ func insertSumDaily(uid string) error {
 	return nil
 }
 
-func updateSumDaily(uid string, date time.Time) error {
-	var u = Usage{}
-	err := usage.Exec(`SELECT 
-	user_id,
-	?,
-	sku,
-	SUM(prompt_units) AS prompt_units,
-	SUM(completion_units) AS completion_units,
-	SUM(total_unit) AS total_unit,
-	SUM(cost) AS cost
-	FROM usages 
-	WHERE date >= ?
-	AND user_id = ?`, date, date, uid).First(&u).Error
-	if err != nil {
-		return err
-	}
-	err = usage.Model(&DailyUsage{}).Where("user_id = ? and date = ?", uid, date).Updates(u).Error
+func updateSumDaily(uid int, date time.Time) error {
+	// var u = Summary{}
+	err := usage.Model(&Usage{}).Exec(`UPDATE daily_usages
+	SET 
+	prompt_units = (SELECT SUM(prompt_units) FROM usages WHERE user_id = daily_usages.user_id AND date >= daily_usages.date),
+	completion_units = (SELECT SUM(completion_units) FROM usages WHERE user_id = daily_usages.user_id AND date >= daily_usages.date),
+	total_unit = (SELECT SUM(total_unit) FROM usages WHERE user_id = daily_usages.user_id AND date >= daily_usages.date),
+	cost = (SELECT SUM(cost) FROM usages WHERE user_id = daily_usages.user_id AND date >= daily_usages.date)
+	WHERE user_id = ? AND date >= ?`, uid, date).Error
 	if err != nil {
 		return err
 	}
