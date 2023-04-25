@@ -10,7 +10,7 @@ import (
 
 type DailyUsage struct {
 	ID              int       `gorm:"column:id"`
-	UserID          int       `gorm:"column:user_id primarykey"`
+	UserID          int       `gorm:"column:user_id";primaryKey`
 	Date            time.Time `gorm:"column:date"`
 	SKU             string    `gorm:"column:sku"`
 	PromptUnits     int       `gorm:"column:prompt_units"`
