@@ -73,7 +73,7 @@ type Tokens struct {
 	PromptCount     int
 	CompletionCount int
 	TotalTokens     int
-	Cost            float64
+	Cost            string
 	Model           string
 	PromptHash      string
 }

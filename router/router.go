@@ -401,7 +401,8 @@ func HandleProy(c *gin.Context) {
 
 	if resp.StatusCode == 200 && localuser {
 		if isStream {
-			chatlog.CompletionCount = NumTokensFromStr(<-fetchResponseContent(resbuf, reader), chatreq.Model)
+			chatdata := <-fetchResponseContent(resbuf, reader)
+			chatlog.CompletionCount = NumTokensFromStr(chatdata, chatreq.Model)
 			chatlog.TotalTokens = chatlog.PromptCount + chatlog.CompletionCount
 		} else {
 			reader.WriteTo(resbuf)
@@ -410,7 +411,7 @@ func HandleProy(c *gin.Context) {
 			chatlog.CompletionCount = chatres.Usage.CompletionTokens
 			chatlog.TotalTokens = chatres.Usage.TotalTokens
 		}
-		chatlog.Cost = Cost(chatlog.Model, chatlog.PromptCount, chatlog.CompletionCount)
+		chatlog.Cost = fmt.Sprintf("%.6f", Cost(chatlog.Model, chatlog.PromptCount, chatlog.CompletionCount))
 		if err := store.Record(&chatlog); err != nil {
 			log.Println(err)
 		}
@@ -484,14 +485,17 @@ func HandleReverseProxy(c *gin.Context) {
 
 }
 func Cost(model string, promptCount, completionCount int) float64 {
-	var cost float64
+	var cost, prompt, completion float64
+	prompt = float64(promptCount)
+	completion = float64(completionCount)
+
 	switch model {
 	case "gpt-3.5-turbo", "gpt-3.5-turbo-0301":
-		cost = 0.002 * float64((promptCount+completionCount)/1000)
+		cost = 0.002 * float64((prompt+completion)/1000)
 	case "gpt-4", "gpt-4-0314":
-		cost = 0.03*float64(promptCount/1000) + 0.06*float64(completionCount/1000)
+		cost = 0.03*float64(prompt/1000) + 0.06*float64(completion/1000)
 	case "gpt-4-32k", "gpt-4-32k-0314":
-		cost = 0.06*float64(promptCount/1000) + 0.12*float64(completionCount/1000)
+		cost = 0.06*float64(prompt/1000) + 0.12*float64(completion/1000)
 	}
 	return cost
 }
