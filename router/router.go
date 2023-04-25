@@ -338,8 +338,8 @@ func HandleProy(c *gin.Context) {
 	if c.Request.URL.Path == "/v1/chat/completions" && localuser {
 
 		if err := c.BindJSON(&chatreq); err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
 			return
-			// c.AbortWithError(http.StatusBadRequest, err)
 		}
 		chatlog.Model = chatreq.Model
 		for _, m := range chatreq.Messages {
@@ -350,9 +350,10 @@ func HandleProy(c *gin.Context) {
 		isStream = chatreq.Stream
 		chatlog.UserID, _ = store.GetUserID(auth[7:])
 	}
-
+	var body bytes.Buffer
+	json.NewEncoder(&body).Encode(chatreq)
 	// 创建 API 请求
-	req, err := http.NewRequest(c.Request.Method, baseUrl+c.Request.RequestURI, c.Request.Body)
+	req, err := http.NewRequest(c.Request.Method, baseUrl+c.Request.RequestURI, &body)
 	if err != nil {
 		log.Println(err)
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
@@ -498,18 +499,6 @@ func Cost(model string, promptCount, completionCount int) float64 {
 func HandleUsage(c *gin.Context) {
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
-
-	// from, err := time.Parse("2006-01-02", fromStr)
-	// if err != nil {
-	// 	c.JSON(400, gin.H{"error": "Invalid from date format"})
-	// 	return
-	// }
-
-	// to, err := time.Parse("2006-01-02", toStr)
-	// if err != nil {
-	// 	c.JSON(400, gin.H{"error": "Invalid to date format"})
-	// 	return
-	// }
 
 	usage, err := store.QueryUsage(fromStr, toStr)
 	if err != nil {
