@@ -1,9 +1,11 @@
 package store
 
 import (
+	"errors"
 	"time"
 
 	"github.com/Sakurasan/to"
+	"gorm.io/gorm"
 )
 
 type DailyUsage struct {
@@ -95,7 +97,7 @@ func Record(chatlog *Tokens) (err error) {
 func SumDaily(userid int) error {
 	var count int64
 	err := usage.Model(&DailyUsage{}).Where("user_id = ? and date = ?", userid, time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)).Count(&count).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	if count == 0 {
