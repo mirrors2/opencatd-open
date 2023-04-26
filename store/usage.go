@@ -58,7 +58,7 @@ func QueryUsage(from, to string) ([]CalcUsage, error) {
 	--SUM(prompt_units) AS prompt_units,
 	-- SUM(completion_units) AS completion_units,
 	SUM(total_unit) AS total_unit,
-	SUM(cost) AS cost`).
+	printf('%.6f', SUM(cost)) AS cost`).
 		Group("user_id").
 		Where("date >= ? AND date < ?", from, to).
 		Find(&results).Error
