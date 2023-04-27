@@ -358,7 +358,9 @@ func HandleProy(c *gin.Context) {
 	req.Header = c.Request.Header
 	if localuser {
 		if store.KeysCache.ItemCount() == 0 {
-			c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
+			c.JSON(http.StatusBadGateway, gin.H{"error": gin.H{
+				"message": "No Api-Key Available",
+			}})
 			return
 		}
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))

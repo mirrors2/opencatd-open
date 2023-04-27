@@ -59,7 +59,8 @@ func main() {
 	// 初始化用户
 	r.POST("/1/users/init", router.Handleinit)
 
-	r.Any("/v1/*proxypath", router.HandleProy)
+	// r.Any("/v1/*proxypath", router.HandleProy)
+	r.Match([]string{http.MethodGet, http.MethodPost}, "/v1/*proxypath", router.HandleProy)
 
 	// r.POST("/v1/chat/completions", router.HandleProy)
 	// r.GET("/v1/models", router.HandleProy)
