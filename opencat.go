@@ -38,6 +38,8 @@ func main() {
 		// 获取所有用户信息
 		group.GET("/users", router.HandleUsers)
 
+		group.GET("/usages", router.HandleUsage)
+
 		// 添加Key
 		group.POST("/keys", router.HandleAddKey)
 
@@ -57,9 +59,12 @@ func main() {
 	// 初始化用户
 	r.POST("/1/users/init", router.Handleinit)
 
-	r.POST("/v1/chat/completions", router.HandleProy)
-	r.GET("/v1/models", router.HandleProy)
-	r.GET("/v1/dashboard/billing/subscription", router.HandleProy)
+	r.Any("/v1/*proxypath", router.HandleProy)
+
+	// r.POST("/v1/chat/completions", router.HandleProy)
+	// r.GET("/v1/models", router.HandleProy)
+	// r.GET("/v1/dashboard/billing/subscription", router.HandleProy)
+
 	r.GET("/", func(c *gin.Context) {
 		c.Writer.WriteHeader(http.StatusOK)
 		c.Writer.WriteString(`<h1><a href="https://github.com/mirrors2/opencatd-open" >opencatd-open</a> available</h1>Api-Keys:<a href=https://platform.openai.com/account/api-keys >https://platform.openai.com/account/api-keys</a>`)

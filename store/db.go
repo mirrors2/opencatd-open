@@ -11,6 +11,8 @@ import (
 
 var db *gorm.DB
 
+var usage *gorm.DB
+
 func init() {
 	if _, err := os.Stat("db"); os.IsNotExist(err) {
 		errDir := os.MkdirAll("db", 0755)
@@ -31,4 +33,13 @@ func init() {
 	}
 	LoadKeysCache()
 	LoadAuthCache()
+
+	usage, err = gorm.Open(sqlite.Open("./db/usage.db"), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
+	err = usage.AutoMigrate(&DailyUsage{}, &Usage{})
+	if err != nil {
+		panic(err)
+	}
 }
