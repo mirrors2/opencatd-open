@@ -31,6 +31,7 @@ var (
 	baseUrl       = "https://api.openai.com"
 	GPT3Dot5Turbo = "gpt-3.5-turbo"
 	GPT4          = "gpt-4"
+	client        = getHttpClient()
 )
 
 type User struct {
@@ -362,7 +363,7 @@ func HandleProy(c *gin.Context) {
 		}
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
 	}
-	client := getHttpClient()
+
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
