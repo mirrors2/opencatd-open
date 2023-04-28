@@ -32,7 +32,8 @@ wget https://github.com/mirrors2/opencatd-open/raw/main/docker/docker-compose.ym
 ```
 ## reset root token
 ```
-docker exec -it opencatd-open ./opencatd reset_root 
+docker exec -it opencatd-open ./opencatd reset_root
+docker exec -it opencatd-open ./opencatd root_token
 ```
 
 ## Q&A

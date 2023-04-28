@@ -23,6 +23,15 @@ func main() {
 		log.Println("new root token:", ntoken)
 		return
 	}
+	if len(args) > 0 && args[0] == "root_token" {
+		u, err := store.GetUserByID(uint(1))
+		if err != nil {
+			log.Fatalln(err)
+			return
+		}
+		log.Println("current root token:", u.Token)
+		return
+	}
 	port := os.Getenv("PORT")
 	r := gin.Default()
 	group := r.Group("/1")
