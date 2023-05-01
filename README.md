@@ -30,10 +30,13 @@ or
 ```
 wget https://github.com/mirrors2/opencatd-open/raw/main/docker/docker-compose.yml
 ```
-## reset root token
-```
-docker exec -it opencatd-open ./opencatd reset_root 
-```
+## 支持的命令
+>获取 root 的 token 
+  - `docker exec opencatd-open opencatd root_token` 
+
+>重置 root 的 token 
+  - `docker exec opencatd-open opencatd reset_root` 
+
 
 ## Q&A
 关于证书?
