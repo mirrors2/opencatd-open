@@ -9,19 +9,44 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func main() {
 	args := os.Args[1:]
-	if len(args) > 0 && args[0] == "reset_root" {
-		log.Println("reset root token...")
-		ntoken := uuid.NewString()
-		if err := store.UpdateUser(uint(1), ntoken); err != nil {
-			log.Fatalln(err)
+	if len(args) > 0 {
+		switch args[0] {
+		case "reset_root":
+			log.Println("reset root token...")
+			if _, err := store.GetUserByID(uint(1)); err != nil {
+				if err == gorm.ErrRecordNotFound {
+					log.Println("请在opencat(或其他APP)客户端完成team初始化")
+					return
+				} else {
+					log.Fatalln(err)
+					return
+				}
+			}
+			ntoken := uuid.NewString()
+			if err := store.UpdateUser(uint(1), ntoken); err != nil {
+				log.Fatalln(err)
+				return
+			}
+			log.Println("new root token:", ntoken)
+			return
+		case "root_token":
+			log.Println("reset root token...")
+			if user, err := store.GetUserByID(uint(1)); err != nil {
+				log.Fatalln(err)
+				return
+			} else {
+				log.Println("root token:", user.Token)
+				return
+			}
+		default:
 			return
 		}
-		log.Println("new root token:", ntoken)
-		return
+
 	}
 	port := os.Getenv("PORT")
 	r := gin.Default()
