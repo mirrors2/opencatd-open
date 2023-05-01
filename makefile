@@ -24,11 +24,12 @@ build:
 	upx -9 bin/opencatd
 
 .PHONY:docker
+# build docker images
 docker:
 	docker run --privileged --rm tonistiigi/binfmt --install all
-	docker buildx create --use --name xbuilder
+	docker buildx create --use --name xbuilder --driver docker-container
 	docker buildx inspect xbuilder --bootstrap
-	docker buildx build --platform linux/amd64,linux/arm64 -t mirrors2/opencatd:latest . --push
+	docker buildx build --platform linux/amd64,linux/arm64 -t mirrors2/opencatd:latest -f docker/Dockerfile . --push
 
 .PHONY: clean
 # clean
