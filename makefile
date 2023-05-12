@@ -15,11 +15,16 @@ LDFlags=" \
 -X 'main.BuildTime=$(BuildTime)' \
 -X 'main.BuildGoVersion=$(BuildGoVersion)'"
 
+.PHONY: web
+# web
+web:
+	cd web && npm install && npm run build && mv dist ..
+	
 .PHONY: build
 # build
 build:
 # mkdir -p bin/ && go build -ldflags $(LDFlags) -o ./bin/ ./...
-	rm -rf qq.tgz /bin/qq 
+	rm -rf  bin 
 	mkdir -p bin/  &&  go build -ldflags "-s -w" -o ./bin/opencatd .
 	upx -9 bin/opencatd
 
