@@ -104,7 +104,6 @@ func main() {
 	// r.GET("/v1/models", router.HandleProy)
 	// r.GET("/v1/dashboard/billing/subscription", router.HandleProy)
 
-
 	// r.Use(static.Serve("/", static.LocalFile("dist", false)))
 	idxFS, err := fs.Sub(web, "dist")
 	if err != nil {
