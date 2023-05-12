@@ -1,7 +1,13 @@
+FROM node:18.12.1-alpine3.16 AS frontend
+WORKDIR /frontend-build
+COPY ./web/ .
+RUN npm install && npm run build && rm -rf node_modules 
+
 FROM golang:1.19.7-alpine as builder
 LABEL anther="github.com/Sakurasan"
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && apk --no-cache add make cmake upx 
 WORKDIR /build
+COPY --from=frontend /frontend-build/dist /build/dist
 COPY . /build
 ENV GO111MODULE=on
 # ENV GOPROXY=https://goproxy.cn,direct

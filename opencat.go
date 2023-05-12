@@ -1,6 +1,8 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"log"
 	"net/http"
 	"opencatd-open/router"
@@ -11,6 +13,18 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+//go:embed dist/*
+var web embed.FS
+
+func getFileSystem(path string) http.FileSystem {
+	fs, err := fs.Sub(web, path)
+	if err != nil {
+		panic(err)
+	}
+
+	return http.FS(fs)
+}
 
 func main() {
 	args := os.Args[1:]
@@ -90,11 +104,17 @@ func main() {
 	// r.GET("/v1/models", router.HandleProy)
 	// r.GET("/v1/dashboard/billing/subscription", router.HandleProy)
 
-	r.GET("/", func(c *gin.Context) {
-		c.Writer.WriteHeader(http.StatusOK)
-		c.Writer.WriteString(`<h1><a href="https://github.com/mirrors2/opencatd-open" >opencatd-open</a> available</h1>Api-Keys:<a href=https://platform.openai.com/account/api-keys >https://platform.openai.com/account/api-keys</a>`)
-	})
-
+	// r.Use(static.Serve("/", static.LocalFile("dist", false)))
+	idxFS, err := fs.Sub(web, "dist")
+	if err != nil {
+		panic(err)
+	}
+	r.GET("/", gin.WrapH(http.FileServer(http.FS(idxFS))))
+	assetsFS, err := fs.Sub(web, "dist/assets")
+	if err != nil {
+		panic(err)
+	}
+	r.GET("/assets/*filepath", gin.WrapH(http.StripPrefix("/assets/", http.FileServer(http.FS(assetsFS)))))
 	if port == "" {
 		port = "80"
 	}

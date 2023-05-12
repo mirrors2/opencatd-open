@@ -1,4 +1,5 @@
 bin/
 test/
+dist/
 *.log
 *.db
