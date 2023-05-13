@@ -126,8 +126,7 @@ const getcurrentYear = () => {
 
 
 onMounted(() => {
-  // url.value = window.location.origin;
-  url.value = 'https://opencatd-open.zeabur.app';
+  url.value = window.location.origin;
   getcurrentYear();
 })
 
