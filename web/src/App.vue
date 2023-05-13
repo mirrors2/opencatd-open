@@ -32,22 +32,22 @@
         </div>
       </div>
       <div class="mt-8 shadow-lg mb-8 flax justify-center items-center">
-        <div class="flex gap-4">
+        <div class="flex gap-2">
           <div>
-            <input class="py-2 px-3 bg-zinc-700 rounded-lg border focus:outline-none text-white flex-1" disabled name=""
+            <input class="w-60 py-2 px-2 bg-zinc-700 rounded-lg border focus:outline-none text-white flex-1" disabled name=""
               id="" v-model="url">
           </div>
           <br>
           <div>
             <input type="submit" value="复制" @click="copyUrl"
-              class="bg-white font-medium py-2 px-5 hover:bg-gray-200 hover:text-gray-900 rounded-lg h-10 text-gray-700">
+              class="bg-white font-medium py-2 px-3 hover:bg-gray-200 hover:text-gray-900 rounded-lg h-10 text-gray-700">
           </div>
         </div>
       </div>
 
       <div class="bg-diy w-screen h-auto flex flex-col overflow-x-auto  justify-center items-center">
         <div>
-          <p class="text-gray-500 mt-5">👉Api-Keys: <a
+          <p class="text-gray-500 mt-5 text-sm">👉Api-Keys: <a
               href=https://platform.openai.com/account/api-keys>https://platform.openai.com/account/api-keys</a></p>
         </div>
         <section
