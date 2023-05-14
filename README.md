@@ -1,10 +1,14 @@
 # opencatd-open
+
 <a title="Docker Image CI" target="_blank" href="https://github.com/mirrors2/opencatd-open/actions"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/mirrors2/opencatd-open/ci.yaml?label=Actions&logo=github&style=flat-square"></a>
 <a title="Docker Pulls" target="_blank" href="https://hub.docker.com/r/mirrors2/opencatd-open"><img src="https://img.shields.io/docker/pulls/mirrors2/opencatd-open.svg?logo=docker&label=docker&style=flat-square"></a>
 
+opencatd-open is an open-source, team-shared service for ChatGPT API that can be safely shared with others for API usage.
+
+---
 OpenCat for Team的开源实现
 
-基本实现了opencatd的全部功能
+~~基本~~实现了opencatd的全部功能
 
 ## 快速上手
 ```
