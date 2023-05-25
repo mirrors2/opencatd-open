@@ -2,9 +2,8 @@ name: Docker Image CI
 #触发器设置
 on:
   push:
-    branches:
-      - main
-      - dev
+    tags:
+      - 'v*'
 
 #项目任务，任务之间可以并行调度
 jobs:
@@ -18,9 +17,9 @@ jobs:
     #使用with跟在后面来为前面的模块输入参数
       with:
         submodules: 'true'
-    - name: Get current date
-      id: date
-      run: echo "::set-output name=today::$(date +'%Y%m%d')"                  
+    - name: Get version # 获取 Tag Version
+      id: vars
+      run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
     - name: Set up Docker Buildx
@@ -45,8 +44,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           #指定用户/仓库名
           tags: |
-            ${{ github.repository }}:${{ steps.date.outputs.today }}
-            ${{ github.repository }}:${{ contains(github.ref,'main') && 'latest' || github.ref_name }}
+            ${{ github.repository }}:${{ steps.vars.outputs.tag }}
+            ${{ github.repository }}:latest
     - name: Docker Hub Description
       #这里是通过md文件自动生成dockerhub描述的模块，也可以不需要
       uses: peter-evans/dockerhub-description@v3
