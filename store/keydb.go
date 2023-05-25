@@ -3,12 +3,15 @@ package store
 import "time"
 
 type Key struct {
-	ID        uint      `gorm:"primarykey" json:"id,omitempty"`
-	Key       string    `gorm:"unique;not null" json:"key,omitempty"`
-	Name      string    `gorm:"unique;not null" json:"name,omitempty"`
-	UserId    string    `json:"-,omitempty"`
-	CreatedAt time.Time `json:"createdAt,omitempty"`
-	UpdatedAt time.Time `json:"updatedAt,omitempty"`
+	ID             uint   `gorm:"primarykey" json:"id,omitempty"`
+	Key            string `gorm:"unique;not null" json:"key,omitempty"`
+	Name           string `gorm:"unique;not null" json:"name,omitempty"`
+	UserId         string `json:"-,omitempty"`
+	KeyType        string
+	EndPoint       string
+	DeploymentName string
+	CreatedAt      time.Time `json:"createdAt,omitempty"`
+	UpdatedAt      time.Time `json:"updatedAt,omitempty"`
 }
 
 func GetKeyrByName(name string) (*Key, error) {

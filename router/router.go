@@ -413,7 +413,7 @@ func HandleProy(c *gin.Context) {
 	if resp.StatusCode == 200 && localuser {
 
 		if isStream {
-			contentCh := fetchResponseContent(writer, reader)
+			contentCh := fetchResponseContent(c, reader)
 			var buffer bytes.Buffer
 			for content := range contentCh {
 				buffer.WriteString(content)
@@ -536,15 +536,18 @@ func HandleUsage(c *gin.Context) {
 	c.JSON(200, usage)
 }
 
-func fetchResponseContent(w *bufio.Writer, responseBody *bufio.Reader) <-chan string {
+func fetchResponseContent(ctx *gin.Context, responseBody *bufio.Reader) <-chan string {
 	contentCh := make(chan string)
 	go func() {
 		defer close(contentCh)
 		for {
 			line, err := responseBody.ReadString('\n')
 			if err == nil {
-				w.WriteString(line)
-				w.Flush()
+				lines := strings.Split(line, "")
+				for _, word := range lines {
+					ctx.Writer.WriteString(word)
+					ctx.Writer.Flush()
+				}
 				if line == "\n" {
 					continue
 				}

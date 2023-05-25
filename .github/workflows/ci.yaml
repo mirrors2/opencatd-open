@@ -7,9 +7,6 @@ on:
       - dev
     tags:
       - 'v*'
-  pull_request:
-    branches: [ "main" ]
-
 
 #项目任务，任务之间可以并行调度
 jobs:
