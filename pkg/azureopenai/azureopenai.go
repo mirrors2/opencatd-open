@@ -16,6 +16,7 @@ package azureopenai
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 )
 
 var (
@@ -41,6 +42,7 @@ type ModelsList struct {
 }
 
 func Models(endpoint, apikey string) (*ModelsList, error) {
+	endpoint = removeTrailingSlash(endpoint)
 	var modelsl ModelsList
 	req, _ := http.NewRequest(http.MethodGet, endpoint+"/openai/deployments?api-version=2022-12-01", nil)
 	req.Header.Set("api-key", apikey)
@@ -55,4 +57,12 @@ func Models(endpoint, apikey string) (*ModelsList, error) {
 	}
 	return &modelsl, nil
 
+}
+
+func removeTrailingSlash(s string) string {
+	const prefix = "openai.azure.com/"
+	if strings.HasPrefix(s, prefix) && strings.HasSuffix(s, "/") {
+		return s[:len(s)-1]
+	}
+	return s
 }

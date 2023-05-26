@@ -3,13 +3,13 @@ package store
 import "time"
 
 type Key struct {
-	ID             uint   `gorm:"primarykey" json:"id,omitempty"`
-	Key            string `gorm:"unique;not null" json:"key,omitempty"`
-	Name           string `gorm:"unique;not null" json:"name,omitempty"`
-	UserId         string `json:"-,omitempty"`
-	KeyType        string
-	EndPoint       string
-	DeploymentName string
+	ID             uint      `gorm:"primarykey" json:"id,omitempty"`
+	Key            string    `gorm:"unique;not null" json:"key,omitempty"`
+	Name           string    `gorm:"unique;not null" json:"name,omitempty"`
+	UserId         string    `json:"-,omitempty"`
+	ApiType        string    `gorm:"column:api_type"`
+	EndPoint       string    `gorm:"column:endpoint"`
+	DeploymentName string    `gorm:"column:deployment_name"`
 	CreatedAt      time.Time `json:"createdAt,omitempty"`
 	UpdatedAt      time.Time `json:"updatedAt,omitempty"`
 }
