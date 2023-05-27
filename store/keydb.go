@@ -1,6 +1,9 @@
 package store
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type Key struct {
 	ID             uint      `gorm:"primarykey" json:"id,omitempty"`
@@ -12,6 +15,11 @@ type Key struct {
 	DeploymentName string    `gorm:"column:deployment_name"`
 	CreatedAt      time.Time `json:"createdAt,omitempty"`
 	UpdatedAt      time.Time `json:"updatedAt,omitempty"`
+}
+
+func (k Key) ToString() string {
+	bdate, _ := json.Marshal(k)
+	return string(bdate)
 }
 
 func GetKeyrByName(name string) (*Key, error) {
@@ -32,12 +40,21 @@ func GetAllKeys() ([]Key, error) {
 }
 
 // 添加记录
-func AddKey(apikey, name string) error {
+func AddKey(apitype, apikey, name string) error {
 	key := Key{
-		Key:  apikey,
-		Name: name,
+		ApiType: apitype,
+		Key:     apikey,
+		Name:    name,
 	}
 	if err := db.Create(&key).Error; err != nil {
+		return err
+	}
+	LoadKeysCache()
+	return nil
+}
+
+func CreateKey(k *Key) error {
+	if err := db.Create(&k).Error; err != nil {
 		return err
 	}
 	LoadKeysCache()

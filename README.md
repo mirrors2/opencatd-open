@@ -10,6 +10,15 @@ OpenCat for Team的开源实现
 
 ~~基本~~实现了opencatd的全部功能
 
+## Extra Support:
+
+| 任务 | 完成情况 |
+| --- | --- |
+|Azure OpenAI | ✅|
+| ... | ... |
+
+
+
 ## 快速上手
 ```
 docker run -d --name opencatd -p 80:80 -v /etc/opencatd:/app/db mirrors2/opencatd-open
