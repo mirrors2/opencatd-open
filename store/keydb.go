@@ -12,6 +12,7 @@ type Key struct {
 	UserId         string    `json:"-,omitempty"`
 	ApiType        string    `gorm:"column:api_type"`
 	EndPoint       string    `gorm:"column:endpoint"`
+	ResourceNmae   string    `gorm:"column:resource_name"`
 	DeploymentName string    `gorm:"column:deployment_name"`
 	CreatedAt      time.Time `json:"createdAt,omitempty"`
 	UpdatedAt      time.Time `json:"updatedAt,omitempty"`

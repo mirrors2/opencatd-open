@@ -224,10 +224,10 @@ func HandleAddKey(c *gin.Context) {
 			return
 		}
 		k := &store.Key{
-			ApiType:  "azure_openai",
-			Name:     body.Name,
-			Key:      body.Key,
-			EndPoint: keynames[1],
+			ApiType:      "azure_openai",
+			Name:         body.Name,
+			Key:          body.Key,
+			ResourceNmae: keynames[1],
 		}
 		if err := store.CreateKey(k); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{
@@ -388,7 +388,7 @@ func HandleProy(c *gin.Context) {
 		// 创建 API 请求
 		switch onekey.ApiType {
 		case "azure_openai":
-			req, err = http.NewRequest(c.Request.Method, fmt.Sprintf("https://%s.openai.azure.com/openai/deployments/%s/chat/completions?api-version=2023-03-15-preview", onekey.EndPoint, modelmap(chatreq.Model)), &body)
+			req, err = http.NewRequest(c.Request.Method, fmt.Sprintf("https://%s.openai.azure.com/openai/deployments/%s/chat/completions?api-version=2023-03-15-preview", onekey.ResourceNmae, modelmap(chatreq.Model)), &body)
 			req.Header = c.Request.Header
 			req.Header.Set("api-key", onekey.Key)
 		case "openai":
@@ -449,7 +449,6 @@ func HandleProy(c *gin.Context) {
 	reader := bufio.NewReader(resp.Body)
 
 	if resp.StatusCode == 200 && localuser {
-
 		if isStream {
 			contentCh := fetchResponseContent(c, reader)
 			var buffer bytes.Buffer
