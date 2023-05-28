@@ -63,6 +63,8 @@ wget https://github.com/mirrors2/opencatd-open/raw/main/docker/docker-compose.ym
   - [Fly.io](https://fly.io/)
   - 或者其他
 
+修改openai的endpoint地址？使用任意上游地址(套娃代理)
+  - 设置环境变量 openai_endpoint
 # License
 
 [GNU General Public License v3.0](License)

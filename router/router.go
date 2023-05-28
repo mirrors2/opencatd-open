@@ -93,7 +93,7 @@ type ChatCompletionResponse struct {
 
 func init() {
 	if openai_endpoint := os.Getenv("openai_endpoint"); openai_endpoint != "" {
-		log.Println("replace %s to %s", baseUrl, openai_endpoint)
+		log.Println(fmt.Sprintf("replace %s to %s", baseUrl, openai_endpoint))
 		baseUrl = openai_endpoint
 	}
 }
