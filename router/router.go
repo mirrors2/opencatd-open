@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"opencatd-open/store"
+	"os"
 	"strings"
 	"time"
 
@@ -88,6 +89,13 @@ type ChatCompletionResponse struct {
 		CompletionTokens int `json:"completion_tokens"`
 		TotalTokens      int `json:"total_tokens"`
 	} `json:"usage"`
+}
+
+func init() {
+	if openai_endpoint := os.Getenv("openai_endpoint"); openai_endpoint != "" {
+		log.Println("replace %s to %s", baseUrl, openai_endpoint)
+		baseUrl = openai_endpoint
+	}
 }
 
 func AuthMiddleware() gin.HandlerFunc {
