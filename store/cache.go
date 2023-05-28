@@ -26,18 +26,18 @@ func LoadKeysCache() {
 		return
 	}
 	for idx, key := range keys {
-		KeysCache.Set(to.String(idx), key.Key, cache.NoExpiration)
+		KeysCache.Set(to.String(idx), key, cache.NoExpiration)
 	}
 }
 
-func FromKeyCacheRandomItem() string {
+func FromKeyCacheRandomItemKey() Key {
 	items := KeysCache.Items()
 	if len(items) == 1 {
-		return items[to.String(0)].Object.(string)
+		return items[to.String(0)].Object.(Key)
 	}
 	idx := rand.Intn(len(items))
 	item := items[to.String(idx)]
-	return item.Object.(string)
+	return item.Object.(Key)
 }
 
 func LoadAuthCache() {

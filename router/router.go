@@ -210,16 +210,45 @@ func HandleUsers(c *gin.Context) {
 func HandleAddKey(c *gin.Context) {
 	var body Key
 	if err := c.BindJSON(&body); err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{
+			"message": err.Error(),
+		}})
 		return
 	}
-	if err := store.AddKey(body.Key, body.Name); err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
-		return
+	if strings.HasPrefix(strings.ToLower(body.Name), "azure") {
+		keynames := strings.Split(body.Name, ".")
+		if len(keynames) < 2 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{
+				"message": "Invalid Key Name",
+			}})
+			return
+		}
+		k := &store.Key{
+			ApiType:      "azure_openai",
+			Name:         body.Name,
+			Key:          body.Key,
+			ResourceNmae: keynames[1],
+		}
+		if err := store.CreateKey(k); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{
+				"message": err.Error(),
+			}})
+			return
+		}
+	} else {
+		if err := store.AddKey("openai", body.Key, body.Name); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{
+				"message": err.Error(),
+			}})
+			return
+		}
 	}
+
 	k, err := store.GetKeyrByName(body.Name)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{
+			"message": err.Error(),
+		}})
 		return
 	}
 	c.JSON(http.StatusOK, k)
@@ -333,6 +362,13 @@ func HandleProy(c *gin.Context) {
 	}
 
 	if c.Request.URL.Path == "/v1/chat/completions" && localuser {
+		if store.KeysCache.ItemCount() == 0 {
+			c.JSON(http.StatusBadGateway, gin.H{"error": gin.H{
+				"message": "No Api-Key Available",
+			}})
+			return
+		}
+		onekey := store.FromKeyCacheRandomItemKey()
 
 		if err := c.BindJSON(&chatreq); err != nil {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -350,12 +386,24 @@ func HandleProy(c *gin.Context) {
 		var body bytes.Buffer
 		json.NewEncoder(&body).Encode(chatreq)
 		// 创建 API 请求
-		req, err = http.NewRequest(c.Request.Method, baseUrl+c.Request.RequestURI, &body)
+		switch onekey.ApiType {
+		case "azure_openai":
+			req, err = http.NewRequest(c.Request.Method, fmt.Sprintf("https://%s.openai.azure.com/openai/deployments/%s/chat/completions?api-version=2023-03-15-preview", onekey.ResourceNmae, modelmap(chatreq.Model)), &body)
+			req.Header = c.Request.Header
+			req.Header.Set("api-key", onekey.Key)
+		case "openai":
+			fallthrough
+		default:
+			req, err = http.NewRequest(c.Request.Method, baseUrl+c.Request.RequestURI, &body)
+			req.Header = c.Request.Header
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", onekey.Key))
+		}
 		if err != nil {
 			log.Println(err)
 			c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 			return
 		}
+
 	} else {
 		req, err = http.NewRequest(c.Request.Method, baseUrl+c.Request.RequestURI, c.Request.Body)
 		if err != nil {
@@ -363,17 +411,7 @@ func HandleProy(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 			return
 		}
-	}
-
-	req.Header = c.Request.Header
-	if localuser {
-		if store.KeysCache.ItemCount() == 0 {
-			c.JSON(http.StatusBadGateway, gin.H{"error": gin.H{
-				"message": "No Api-Key Available",
-			}})
-			return
-		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
+		req.Header = c.Request.Header
 	}
 
 	resp, err := client.Do(req)
@@ -411,7 +449,6 @@ func HandleProy(c *gin.Context) {
 	reader := bufio.NewReader(resp.Body)
 
 	if resp.StatusCode == 200 && localuser {
-
 		if isStream {
 			contentCh := fetchResponseContent(c, reader)
 			var buffer bytes.Buffer
@@ -500,8 +537,8 @@ func HandleReverseProxy(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
 			return
 		}
-		// c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", store.FromKeyCacheRandomItem()))
+		onekey := store.FromKeyCacheRandomItemKey()
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", onekey.Key))
 	}
 
 	proxy.ServeHTTP(c.Writer, req)
@@ -628,4 +665,14 @@ func NumTokensFromStr(messages string, model string) (num_tokens int) {
 
 	num_tokens += len(tkm.Encode(messages, nil, nil))
 	return num_tokens
+}
+
+func modelmap(in string) string {
+	switch in {
+	case "gpt-3.5-turbo":
+		return "gpt-35-turbo"
+	case "gpt-4":
+		return "gpt-4"
+	}
+	return in
 }

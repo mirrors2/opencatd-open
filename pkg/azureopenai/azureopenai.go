@@ -9,6 +9,10 @@ curl $AZURE_OPENAI_ENDPOINT/openai/deployments/gpt-35-turbo/chat/completions?api
     "messages": [{"role": "user", "content": "你好"}]
   }'
 
+  curl $AZURE_OPENAI_ENDPOINT/openai/deployments?api-version=2022-12-01 \
+  -H "Content-Type: application/json" \
+  -H "api-key: $AZURE_OPENAI_KEY" \
+
 */
 
 package azureopenai
@@ -16,6 +20,7 @@ package azureopenai
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 )
 
 var (
@@ -41,6 +46,7 @@ type ModelsList struct {
 }
 
 func Models(endpoint, apikey string) (*ModelsList, error) {
+	endpoint = removeTrailingSlash(endpoint)
 	var modelsl ModelsList
 	req, _ := http.NewRequest(http.MethodGet, endpoint+"/openai/deployments?api-version=2022-12-01", nil)
 	req.Header.Set("api-key", apikey)
@@ -55,4 +61,12 @@ func Models(endpoint, apikey string) (*ModelsList, error) {
 	}
 	return &modelsl, nil
 
+}
+
+func removeTrailingSlash(s string) string {
+	const prefix = "openai.azure.com/"
+	if strings.HasPrefix(s, prefix) && strings.HasSuffix(s, "/") {
+		return s[:len(s)-1]
+	}
+	return s
 }
