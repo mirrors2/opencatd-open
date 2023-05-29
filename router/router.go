@@ -396,7 +396,7 @@ func HandleProy(c *gin.Context) {
 		// 创建 API 请求
 		switch onekey.ApiType {
 		case "azure_openai":
-			req, err = http.NewRequest(c.Request.Method, fmt.Sprintf("https://%s.openai.azure.com/openai/deployments/%s/chat/completions?api-version=2023-03-15-preview", onekey.ResourceNmae, modelmap(chatreq.Model)), &body)
+			req, err = http.NewRequest(c.Request.Method, fmt.Sprintf("https://%s.openai.azure.com/openai/deployments/%s/chat/completions?api-version=2023-05-15", onekey.ResourceNmae, modelmap(chatreq.Model)), &body)
 			req.Header = c.Request.Header
 			req.Header.Set("api-key", onekey.Key)
 		case "openai":
