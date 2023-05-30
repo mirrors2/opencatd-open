@@ -3,7 +3,7 @@ WORKDIR /frontend-build
 COPY ./web/ .
 RUN npm install && npm run build && rm -rf node_modules 
 
-FROM golang:1.19.7-alpine as builder
+FROM golang:1.19-alpine as builder
 LABEL anther="github.com/Sakurasan"
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && apk --no-cache add make cmake upx 
 WORKDIR /build
