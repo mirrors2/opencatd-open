@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"opencatd-open/pkg/azureopenai"
 	"opencatd-open/store"
 	"os"
 	"strings"
@@ -46,8 +47,10 @@ type User struct {
 type Key struct {
 	ID        int    `json:"id,omitempty"`
 	Key       string `json:"key,omitempty"`
-	UpdatedAt string `json:"updatedAt,omitempty"`
 	Name      string `json:"name,omitempty"`
+	ApiType   string `json:"api_type,omitempty"`
+	Endpoint  string `json:"endpoint,omitempty"`
+	UpdatedAt string `json:"updatedAt,omitempty"`
 	CreatedAt string `json:"createdAt,omitempty"`
 }
 
@@ -223,7 +226,9 @@ func HandleAddKey(c *gin.Context) {
 		}})
 		return
 	}
-	if strings.HasPrefix(strings.ToLower(body.Name), "azure") {
+	body.Name = strings.ToLower(strings.TrimSpace(body.Name))
+	body.Key = strings.TrimSpace(body.Key)
+	if strings.HasPrefix(body.Name, "azure.") {
 		keynames := strings.Split(body.Name, ".")
 		if len(keynames) < 2 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{
@@ -236,6 +241,7 @@ func HandleAddKey(c *gin.Context) {
 			Name:         body.Name,
 			Key:          body.Key,
 			ResourceNmae: keynames[1],
+			EndPoint:     body.Endpoint,
 		}
 		if err := store.CreateKey(k); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{
@@ -244,12 +250,29 @@ func HandleAddKey(c *gin.Context) {
 			return
 		}
 	} else {
-		if err := store.AddKey("openai", body.Key, body.Name); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{
-				"message": err.Error(),
-			}})
-			return
+		if body.ApiType == "" {
+			if err := store.AddKey("openai", body.Key, body.Name); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{
+					"message": err.Error(),
+				}})
+				return
+			}
+		} else {
+			k := &store.Key{
+				ApiType:      body.ApiType,
+				Name:         body.Name,
+				Key:          body.Key,
+				ResourceNmae: azureopenai.GetResourceName(body.Endpoint),
+				EndPoint:     body.Endpoint,
+			}
+			if err := store.CreateKey(k); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{
+					"message": err.Error(),
+				}})
+				return
+			}
 		}
+
 	}
 
 	k, err := store.GetKeyrByName(body.Name)
@@ -281,10 +304,10 @@ func HandleAddUser(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
-	// if len(body.Name) == 0 {
-	// 	c.JSON(http.StatusOK, gin.H{"error": "invalid user name"})
-	// 	return
-	// }
+	if len(body.Name) == 0 {
+		c.JSON(http.StatusOK, gin.H{"error": "invalid user name"})
+		return
+	}
 
 	if err := store.AddUser(body.Name, uuid.NewString()); err != nil {
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
@@ -396,7 +419,14 @@ func HandleProy(c *gin.Context) {
 		// 创建 API 请求
 		switch onekey.ApiType {
 		case "azure_openai":
-			req, err = http.NewRequest(c.Request.Method, fmt.Sprintf("https://%s.openai.azure.com/openai/deployments/%s/chat/completions?api-version=2023-05-15", onekey.ResourceNmae, modelmap(chatreq.Model)), &body)
+			var buildurl string
+			var apiVersion = "2023-05-15"
+			if onekey.EndPoint != "" {
+				buildurl = fmt.Sprintf("https://%s/openai/deployments/%s/chat/completions?api-version=%s", onekey.EndPoint, modelmap(chatreq.Model), apiVersion)
+			} else {
+				buildurl = fmt.Sprintf("https://%s.openai.azure.com/openai/deployments/%s/chat/completions?api-version=%s", onekey.ResourceNmae, modelmap(chatreq.Model), apiVersion)
+			}
+			req, err = http.NewRequest(c.Request.Method, buildurl, &body)
 			req.Header = c.Request.Header
 			req.Header.Set("api-key", onekey.Key)
 		case "openai":

@@ -20,6 +20,7 @@ package azureopenai
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -46,7 +47,7 @@ type ModelsList struct {
 }
 
 func Models(endpoint, apikey string) (*ModelsList, error) {
-	endpoint = removeTrailingSlash(endpoint)
+	endpoint = RemoveTrailingSlash(endpoint)
 	var modelsl ModelsList
 	req, _ := http.NewRequest(http.MethodGet, endpoint+"/openai/deployments?api-version=2022-12-01", nil)
 	req.Header.Set("api-key", apikey)
@@ -63,10 +64,19 @@ func Models(endpoint, apikey string) (*ModelsList, error) {
 
 }
 
-func removeTrailingSlash(s string) string {
+func RemoveTrailingSlash(s string) string {
 	const prefix = "openai.azure.com/"
-	if strings.HasPrefix(s, prefix) && strings.HasSuffix(s, "/") {
+	if strings.HasSuffix(strings.TrimSpace(s), prefix) && strings.HasSuffix(s, "/") {
 		return s[:len(s)-1]
 	}
 	return s
+}
+
+func GetResourceName(url string) string {
+	re := regexp.MustCompile(`https?://(.+)\.openai\.azure\.com/?`)
+	match := re.FindStringSubmatch(url)
+	if len(match) > 1 {
+		return match[1]
+	}
+	return ""
 }
