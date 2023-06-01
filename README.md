@@ -65,6 +65,9 @@ wget https://github.com/mirrors2/opencatd-open/raw/main/docker/docker-compose.ym
 
 修改openai的endpoint地址？使用任意上游地址(套娃代理)
   - 设置环境变量 openai_endpoint
+
+使用Nginx + Docker部署
+- [使用Nginx + Docker部署](./doc/deploy.md)
 # License
 
 [GNU General Public License v3.0](License)
