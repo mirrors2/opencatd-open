@@ -17,7 +17,7 @@ RUN make build
 FROM alpine:latest AS runner
 # 设置alpine 时间为上海时间
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && apk update && apk --no-cache add tzdata && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
-    && echo "Asia/Shanghai" > /etc/timezone \
+    && echo "Asia/Shanghai" > /etc/timezone 
 # RUN apk update && apk --no-cache add openssl libgcc libstdc++ binutils
 WORKDIR /app
 COPY --from=builder /build/bin/opencatd /app/opencatd
