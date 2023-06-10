@@ -118,6 +118,12 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		if store.IsExistAuthCache(token[7:]) {
+			if strings.HasPrefix(c.Request.URL.Path, "/1/me") {
+				c.Next()
+				return
+			}
+		}
 		if token[7:] != rootToken {
 			u, err := store.GetUserByID(uint(1))
 			if err != nil {
