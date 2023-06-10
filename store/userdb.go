@@ -73,6 +73,15 @@ func GetUserByName(name string) (*User, error) {
 	return &user, nil
 }
 
+func GetUserByToken(token string) (*User, error) {
+	var user User
+	result := db.Where("token = ?", token).First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &user, nil
+}
+
 func GetUserID(authkey string) (int, error) {
 	var user User
 	result := db.Where(&User{Token: authkey}).First(&user)
