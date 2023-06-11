@@ -68,6 +68,21 @@ func QueryUsage(from, to string) ([]CalcUsage, error) {
 	return results, nil
 }
 
+func QueryUserUsage(userid, from, to string) (*CalcUsage, error) {
+	var results = new(CalcUsage)
+	err := usage.Model(&DailyUsage{}).Select(`user_id, 
+	--SUM(prompt_units) AS prompt_units,
+	-- SUM(completion_units) AS completion_units,
+	SUM(total_unit) AS total_unit,
+	printf('%.6f', SUM(cost)) AS cost`).
+		Where("user_id = ? AND date >= ? AND date < ?", userid, from, to).
+		Find(&results).Error
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 type Tokens struct {
 	UserID          int
 	PromptCount     int

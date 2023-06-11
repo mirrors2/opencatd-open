@@ -71,6 +71,8 @@ func main() {
 		// 获取当前用户信息
 		group.GET("/me", router.HandleMe)
 
+		group.GET("/me/usages", router.HandleMeUsage)
+
 		// 获取所有Key
 		group.GET("/keys", router.HandleKeys)
 

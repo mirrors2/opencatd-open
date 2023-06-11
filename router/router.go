@@ -203,6 +203,40 @@ func HandleMe(c *gin.Context) {
 	c.JSON(http.StatusOK, resJSON)
 }
 
+func HandleMeUsage(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	fromStr := c.Query("from")
+	toStr := c.Query("to")
+	getMonthStartAndEnd := func() (start, end string) {
+		loc, _ := time.LoadLocation("Local")
+		now := time.Now().In(loc)
+
+		year, month, _ := now.Date()
+
+		startOfMonth := time.Date(year, month, 1, 0, 0, 0, 0, loc)
+		endOfMonth := startOfMonth.AddDate(0, 1, 0)
+
+		start = startOfMonth.Format("2006-01-02")
+		end = endOfMonth.Format("2006-01-02")
+		return
+	}
+	if fromStr == "" || toStr == "" {
+		fromStr, toStr = getMonthStartAndEnd()
+	}
+	user, err := store.GetUserByToken(token)
+	if err != nil {
+		c.AbortWithError(http.StatusForbidden, err)
+		return
+	}
+	usage, err := store.QueryUserUsage(to.String(user.ID), fromStr, toStr)
+	if err != nil {
+		c.AbortWithError(http.StatusForbidden, err)
+		return
+	}
+
+	c.JSON(200, usage)
+}
+
 func HandleKeys(c *gin.Context) {
 	keys, err := store.GetAllKeys()
 	if err != nil {
@@ -439,7 +473,12 @@ func HandleProy(c *gin.Context) {
 		case "openai":
 			fallthrough
 		default:
-			req, err = http.NewRequest(c.Request.Method, baseUrl+c.Request.RequestURI, &body)
+			if onekey.EndPoint != "" {
+				req, err = http.NewRequest(c.Request.Method, onekey.EndPoint+c.Request.RequestURI, &body)
+			} else {
+				req, err = http.NewRequest(c.Request.Method, baseUrl+c.Request.RequestURI, &body)
+			}
+
 			req.Header = c.Request.Header
 			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", onekey.Key))
 		}
