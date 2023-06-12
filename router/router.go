@@ -197,7 +197,7 @@ func HandleMe(c *gin.Context) {
 		int(u.ID),
 		u.UpdatedAt.Format(time.RFC3339),
 		u.Name,
-		u.Token[:15] + "*****" + u.Token[len(u.Token)-15:],
+		u.Token,
 		u.CreatedAt.Format(time.RFC3339),
 	}
 	c.JSON(http.StatusOK, resJSON)
