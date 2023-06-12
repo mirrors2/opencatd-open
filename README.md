@@ -67,7 +67,10 @@ wget https://github.com/mirrors2/opencatd-open/raw/main/docker/docker-compose.ym
   - 设置环境变量 openai_endpoint
 
 使用Nginx + Docker部署
-- [使用Nginx + Docker部署](./doc/deploy.md)
+  - [使用Nginx + Docker部署](./doc/deploy.md)
+  
+pandola for team
+  - [pandola for team](./doc/pandola.md)
 # License
 
 [GNU General Public License v3.0](License)

@@ -2,11 +2,14 @@ package store
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type User struct {
+	gorm.Model
 	IsDelete  bool      `gorm:"default:false" json:"IsDelete"`
-	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id,omitempty"`
+	ID        uint      `gorm:"primarykey autoIncrement;" json:"id,omitempty"`
 	Name      string    `gorm:"unique;not null" json:"name,omitempty"`
 	Token     string    `gorm:"unique;not null" json:"token,omitempty"`
 	CreatedAt time.Time `json:"createdAt,omitempty"`

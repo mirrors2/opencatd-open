@@ -15,3 +15,6 @@
   - key name以 azure.[resource name]的方式添加
   - 密钥任取一个
   - <img src="./azure_openai_for_team.png" alt="azure_openai_for_team" height="600">
+- [AMA(问天)](http://bytemyth.com/ama) 使用方式
+  - ![](azure_ama.png)
+  - 每个 team server 用户旁边有一个复制按钮，点击后，把复制的链接粘贴到浏览器，可以一键设置

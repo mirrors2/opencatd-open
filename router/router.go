@@ -463,7 +463,7 @@ func HandleProy(c *gin.Context) {
 			var buildurl string
 			var apiVersion = "2023-05-15"
 			if onekey.EndPoint != "" {
-				buildurl = fmt.Sprintf("https://%s/openai/deployments/%s/chat/completions?api-version=%s", onekey.EndPoint, modelmap(chatreq.Model), apiVersion)
+				buildurl = fmt.Sprintf("%s/openai/deployments/%s/chat/completions?api-version=%s", onekey.EndPoint, modelmap(chatreq.Model), apiVersion)
 			} else {
 				buildurl = fmt.Sprintf("https://%s.openai.azure.com/openai/deployments/%s/chat/completions?api-version=%s", onekey.ResourceNmae, modelmap(chatreq.Model), apiVersion)
 			}
