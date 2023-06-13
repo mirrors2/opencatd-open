@@ -100,11 +100,11 @@ func main() {
 	// 初始化用户
 	r.POST("/1/users/init", router.Handleinit)
 
-	r.Any("/v1/*proxypath", router.HandleProy)
+	r.Any("/v1/*proxypath", router.HandleProxy)
 
-	// r.POST("/v1/chat/completions", router.HandleProy)
-	// r.GET("/v1/models", router.HandleProy)
-	// r.GET("/v1/dashboard/billing/subscription", router.HandleProy)
+	// r.POST("/v1/chat/completions", router.HandleProxy)
+	// r.GET("/v1/models", router.HandleProxy)
+	// r.GET("/v1/dashboard/billing/subscription", router.HandleProxy)
 
 	// r.Use(static.Serve("/", static.LocalFile("dist", false)))
 	idxFS, err := fs.Sub(web, "dist")

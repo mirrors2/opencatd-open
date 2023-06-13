@@ -8,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"opencatd-open/pkg/azureopenai"
 	"opencatd-open/store"
 	"os"
@@ -416,7 +416,86 @@ func getHttpClient() *http.Client {
 	return &http.Client{Transport: tr}
 }
 
-func HandleProy(c *gin.Context) {
+func sendRequestWithRetry(c *gin.Context, client *http.Client, req *http.Request, maxRetries int, seed int64, initialKey store.Key) (*http.Response, error) {
+	var resp *http.Response
+	var err error
+
+	onekey := initialKey // 初始化onekey为传入的初始值
+
+	// 读取请求体
+	bodyBytes, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	req.Body.Close() // 记得关闭 req.Body
+
+	type Error struct {
+		Message string `json:"message"`
+	}
+
+	type ResponseBody struct {
+		Error Error `json:"error"`
+	}
+
+	for i := 0; i < maxRetries; i++ {
+		reqCopy := req.Clone(c) // 克隆请求
+
+		if i > 0 {
+			onekey = store.FromKeyCacheRandomItemKey(i, seed)                         // 重试时获取新的键值
+			reqCopy.Header.Set("Authorization", fmt.Sprintf("Bearer %s", onekey.Key)) // 只有在重试时才更改请求头
+		}
+
+		// 使用读取的请求体
+		reqCopy.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+		resp, err = client.Do(reqCopy)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+
+		// 如果状态码是429, 则需要进行等待或者直接重试
+		if resp.StatusCode == 429 {
+			// 读取响应体
+			respBodyBytes, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+
+			// 将响应体数据写回以便外部访问
+			resp.Body = ioutil.NopCloser(bytes.NewBuffer(respBodyBytes))
+
+			// 解析响应体
+			var responseBody ResponseBody
+			err = json.Unmarshal(respBodyBytes, &responseBody)
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+
+			// 检查响应体中的message是否等于 "rate limited"
+			if responseBody.Error.Message == "rate limited" {
+				// 如果是，则等待5秒再重试
+				log.Printf("Received 429 status code and 'rate limited' message for retry %d using key %s with name %s and api-type %s. Sleeping for 5 seconds.", i, onekey.Key, onekey.Name, onekey.ApiType)
+				time.Sleep(5 * time.Second)
+			} else {
+				// 如果响应体中的message不是 "rate limited", 则直接重试
+				log.Printf("Received 429 status code for retry %d using key %s with name %s and api-type %s. Retrying immediately.", i, onekey.Key, onekey.Name, onekey.ApiType)
+			}
+
+			continue
+		}
+
+		// 如果状态码不是429，我们得到了一个有效的响应，所以跳出循环并返回响应和nil错误
+		break
+	}
+
+	return resp, nil // 最后返回响应和nil，而不是错误信息
+}
+
+func HandleProxy(c *gin.Context) {
 	var (
 		localuser  bool
 		isStream   bool
@@ -428,10 +507,13 @@ func HandleProy(c *gin.Context) {
 		err        error
 		// wg         sync.WaitGroup
 	)
+	seed := time.Now().UnixNano() / 1e6
 	auth := c.Request.Header.Get("Authorization")
 	if len(auth) > 7 && auth[:7] == "Bearer " {
 		localuser = store.IsExistAuthCache(auth[7:])
 	}
+
+	onekey := store.FromKeyCacheRandomItemKey(0, seed)
 
 	if c.Request.URL.Path == "/v1/chat/completions" && localuser {
 		if store.KeysCache.ItemCount() == 0 {
@@ -440,7 +522,6 @@ func HandleProy(c *gin.Context) {
 			}})
 			return
 		}
-		onekey := store.FromKeyCacheRandomItemKey()
 
 		if err := c.BindJSON(&chatreq); err != nil {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -470,7 +551,7 @@ func HandleProy(c *gin.Context) {
 			req, err = http.NewRequest(c.Request.Method, buildurl, &body)
 			req.Header = c.Request.Header
 			req.Header.Set("api-key", onekey.Key)
-		case "openai":
+		case "openai", "openai-plus":
 			fallthrough
 		default:
 			if onekey.EndPoint != "" {
@@ -498,7 +579,9 @@ func HandleProy(c *gin.Context) {
 		req.Header = c.Request.Header
 	}
 
-	resp, err := client.Do(req)
+	maxRetries := 5 // 设置最大重试次数为5
+	resp, err := sendRequestWithRetry(c, client, req, maxRetries, seed, onekey)
+
 	if err != nil {
 		log.Println(err)
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
@@ -581,53 +664,6 @@ func HandleProy(c *gin.Context) {
 	}
 }
 
-func HandleReverseProxy(c *gin.Context) {
-	proxy := &httputil.ReverseProxy{
-		Director: func(req *http.Request) {
-			req.URL.Scheme = "https"
-			req.URL.Host = "api.openai.com"
-			// req.Header.Set("Authorization", "Bearer YOUR_API_KEY_HERE")
-		},
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).DialContext,
-			ForceAttemptHTTP2:     true,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	var localuser bool
-	auth := c.Request.Header.Get("Authorization")
-	if len(auth) > 7 && auth[:7] == "Bearer " {
-		log.Println(store.IsExistAuthCache(auth[7:]))
-		localuser = store.IsExistAuthCache(auth[7:])
-	}
-
-	req, err := http.NewRequest(c.Request.Method, c.Request.URL.Path, c.Request.Body)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
-		return
-	}
-	req.Header = c.Request.Header
-	if localuser {
-		if store.KeysCache.ItemCount() == 0 {
-			c.JSON(http.StatusOK, gin.H{"error": "No Api-Key Available"})
-			return
-		}
-		onekey := store.FromKeyCacheRandomItemKey()
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", onekey.Key))
-	}
-
-	proxy.ServeHTTP(c.Writer, req)
-
-}
 func Cost(model string, promptCount, completionCount int) float64 {
 	var cost, prompt, completion float64
 	prompt = float64(promptCount)
