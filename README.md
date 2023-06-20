@@ -69,8 +69,8 @@ wget https://github.com/mirrors2/opencatd-open/raw/main/docker/docker-compose.ym
 使用Nginx + Docker部署
   - [使用Nginx + Docker部署](./doc/deploy.md)
   
-pandola for team
-  - [pandola for team](./doc/pandola.md)
+pandora for team
+  - [pandora for team](./doc/pandora.md)
 # License
 
 [GNU General Public License v3.0](License)

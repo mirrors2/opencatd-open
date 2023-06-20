@@ -1,6 +1,6 @@
-# pandola for team
+# pandora for team
 
-pandola是一个把ChatGPT(web/App)接口化的项目，可以看做是第三方 OpenAI API 提供方(接口和OpenAI一致)
+[pandora](pandora)是一个把ChatGPT(web/App)接口化的项目，可以看做是第三方 OpenAI API 提供方(接口和OpenAI一致)
 
 ## 准备
 - https://ai.fakeopen.com/auth1 获取accesstoken
