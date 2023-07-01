@@ -773,7 +773,7 @@ func NumTokensFromStr(messages string, model string) (num_tokens int) {
 
 func modelmap(in string) string {
 	// gpt-3.5-turbo -> gpt-35-turbo
-	if strings.HasSuffix(in, ".") {
+	if strings.Contains(in, ".") {
 		return strings.ReplaceAll(in, ".", "")
 	}
 	return in
