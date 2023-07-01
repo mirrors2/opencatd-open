@@ -115,8 +115,9 @@ Resp:
 ### 重置用户 Token
 
 - URL: `/1/users/:id/reset`
+- URL: `/1/users/:id/reset?token={new user token}`
 - Method: `POST`
-- Description: 重置用户 Token
+- Description: 重置用户 Token 默认生成新 Token 也可以指定
 - Headers:
     - Authorization: Bearer {token}
 

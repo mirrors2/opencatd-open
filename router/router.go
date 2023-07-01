@@ -378,8 +378,12 @@ func HandleDelUser(c *gin.Context) {
 
 func HandleResetUserToken(c *gin.Context) {
 	id := to.Int(c.Param("id"))
+	newtoken := c.Query("token")
+	if newtoken == "" {
+		newtoken = uuid.NewString()
+	}
 
-	if err := store.UpdateUser(uint(id), uuid.NewString()); err != nil {
+	if err := store.UpdateUser(uint(id), newtoken); err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
