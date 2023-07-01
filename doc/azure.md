@@ -8,6 +8,7 @@
 | model name | deployment name |
 | --- | --- |
 |gpt-35-turbo | gpt-35-turbo |
+|gpt-35-turbo-16k | gpt-35-turbo-16k |
 | gpt-4 | gpt-4 |
 
 ## How to use

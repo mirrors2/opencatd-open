@@ -772,11 +772,9 @@ func NumTokensFromStr(messages string, model string) (num_tokens int) {
 }
 
 func modelmap(in string) string {
-	switch in {
-	case "gpt-3.5-turbo":
-		return "gpt-35-turbo"
-	case "gpt-4":
-		return "gpt-4"
+	// gpt-3.5-turbo -> gpt-35-turbo
+	if strings.HasSuffix(in, ".") {
+		return strings.ReplaceAll(in, ".", "")
 	}
 	return in
 }
