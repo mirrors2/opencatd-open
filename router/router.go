@@ -638,12 +638,24 @@ func Cost(model string, promptCount, completionCount int) float64 {
 	completion = float64(completionCount)
 
 	switch model {
-	case "gpt-3.5-turbo", "gpt-3.5-turbo-0301":
+	case "gpt-3.5-turbo-0301":
 		cost = 0.002 * float64((prompt+completion)/1000)
-	case "gpt-4", "gpt-4-0314":
+	case "gpt-3.5-turbo", "gpt-3.5-turbo-0613":
+		cost = 0.0015*float64((prompt)/1000) + 0.002*float64(completion/1000)
+	case "gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613":
+		cost = 0.003*float64((prompt)/1000) + 0.004*float64(completion/1000)
+	case "gpt-4", "gpt-4-0613", "gpt-4-0314":
 		cost = 0.03*float64(prompt/1000) + 0.06*float64(completion/1000)
-	case "gpt-4-32k", "gpt-4-32k-0314":
+	case "gpt-4-32k", "gpt-4-32k-0613":
 		cost = 0.06*float64(prompt/1000) + 0.12*float64(completion/1000)
+	default:
+		if strings.Contains(model, "gpt-3.5-turbo") {
+			cost = 0.003 * float64((prompt+completion)/1000)
+		} else if strings.Contains(model, "gpt-4") {
+			cost = 0.06 * float64((prompt+completion)/1000)
+		} else {
+			cost = 0.002 * float64((prompt+completion)/1000)
+		}
 	}
 	return cost
 }
