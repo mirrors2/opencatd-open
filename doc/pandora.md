@@ -10,15 +10,15 @@
 ## 客户端设置
 
 1.添加接口
- ![](ama_pandola_provider.png)
+ ![](ama_pandora_provider.png)
 
 2.创建用户&Copy Config
- ![](ama_pandola_copy_config.png)
+ ![](ama_pandora_copy_config.png)
 
  Ex:`ama://set-api-key?server=http%3A%2F%2F123.456.7.89&key=8fc322fa-15d2-43d7-bc59-621554e82c2a`
 
 3.Configure Client
-![](ama_pandola_config_client.png)
+![](ama_pandora_config_client.png)
 
 3.测试聊天
- ![](ama_pandola_chat_test.png)
+ ![](ama_pandora_chat_test.png)

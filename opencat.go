@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"embed"
+	"encoding/json"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -9,6 +12,7 @@ import (
 	"opencatd-open/store"
 	"os"
 
+	"github.com/duke-git/lancet/v2/fileutil"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -29,6 +33,12 @@ func getFileSystem(path string) http.FileSystem {
 func main() {
 	args := os.Args[1:]
 	if len(args) > 0 {
+		type user struct {
+			ID    uint
+			Name  string
+			Token string
+		}
+		var us []user
 		switch args[0] {
 		case "reset_root":
 			log.Println("reset root token...")
@@ -46,17 +56,84 @@ func main() {
 				log.Fatalln(err)
 				return
 			}
-			log.Println("new root token:", ntoken)
+			log.Println("[success]new root token:", ntoken)
 			return
 		case "root_token":
-			log.Println("reset root token...")
+			log.Println("query root token...")
 			if user, err := store.GetUserByID(uint(1)); err != nil {
 				log.Fatalln(err)
 				return
 			} else {
-				log.Println("root token:", user.Token)
+				log.Println("[success]root token:", user.Token)
 				return
 			}
+		case "save":
+			log.Println("backup user info -> user.json")
+			if users, err := store.GetAllUsers(); err != nil {
+				log.Fatalln(err)
+				return
+			} else {
+				for _, u := range users {
+					us = append(us, user{ID: u.ID, Name: u.Name, Token: u.Token})
+				}
+			}
+			if !fileutil.IsExist("./db/user.json") {
+				file, err := os.Create("./db/user.json")
+				if err != nil {
+					log.Fatalln(err)
+					return
+				}
+				defer file.Close()
+			} else {
+				// 文件存在，打开文件
+				file, _ := os.OpenFile("./db/user.json", os.O_RDWR|os.O_TRUNC, 0666)
+				defer file.Close()
+
+				buff := bytes.NewBuffer(nil)
+				json.NewEncoder(buff).Encode(us)
+
+				file.WriteString(buff.String())
+				fmt.Println("------- END -------")
+				return
+			}
+		case "load":
+			fmt.Println("\nimport user.json -> db")
+			if !fileutil.IsExist("./db/user.json") {
+				log.Fatalln("404! user.json is not found.")
+				return
+			}
+			users, err := store.GetAllUsers()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			if len(users) != 0 {
+				log.Println("user db 存在数据，取消导入")
+				return
+			}
+			file, err := os.Open("./db/user.json")
+			if err != nil {
+				fmt.Println("Error opening file:", err)
+				return
+			}
+			defer file.Close()
+
+			decoder := json.NewDecoder(file)
+			err = decoder.Decode(&us)
+			if err != nil {
+				fmt.Println("Error decoding JSON:", err)
+				return
+			}
+			for _, u := range us {
+				log.Println(u.ID, u.Name, u.Token)
+				err := store.CreateUser(&store.User{ID: u.ID, Name: u.Name, Token: u.Token})
+				if err != nil {
+					log.Println(err)
+				}
+			}
+			fmt.Println("------- END -------")
+			return
+
 		default:
 			return
 		}
