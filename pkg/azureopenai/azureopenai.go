@@ -1,5 +1,6 @@
 /*
 https://learn.microsoft.com/zh-cn/azure/cognitive-services/openai/chatgpt-quickstart
+https://learn.microsoft.com/zh-cn/azure/ai-services/openai/reference#chat-completions
 
 curl $AZURE_OPENAI_ENDPOINT/openai/deployments/gpt-35-turbo/chat/completions?api-version=2023-03-15-preview \
   -H "Content-Type: application/json" \
