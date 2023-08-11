@@ -861,7 +861,14 @@ func WhisperProxy(c *gin.Context) {
 	}
 	chatlog.UserID = int(lu.ID)
 
-	ParseWhisperRequestTokens(c, &chatlog, byteBody)
+	if err := ParseWhisperRequestTokens(c, &chatlog, byteBody); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": gin.H{
+				"message": err.Error(),
+			},
+		})
+		return
+	}
 
 	targetUrl, _ := url.ParseRequestURI(key.EndPoint)
 	proxy := httputil.NewSingleHostReverseProxy(targetUrl)
@@ -885,8 +892,6 @@ func WhisperProxy(c *gin.Context) {
 		return nil
 	}
 	proxy.ServeHTTP(c.Writer, c.Request)
-	return
-
 }
 
 func probe(fileReader io.Reader) (time.Duration, error) {
