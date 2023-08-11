@@ -443,7 +443,7 @@ func HandleProy(c *gin.Context) {
 	auth := c.Request.Header.Get("Authorization")
 	if len(auth) > 7 && auth[:7] == "Bearer " {
 		localuser = store.IsExistAuthCache(auth[7:])
-		c.Set("localuser", localuser)
+		c.Set("localuser", auth[7:])
 	}
 	if c.Request.URL.Path == "/v1/audio/transcriptions" {
 		WhisperProxy(c)
@@ -869,11 +869,17 @@ func WhisperProxy(c *gin.Context) {
 		})
 		return
 	}
-
-	targetUrl, _ := url.ParseRequestURI(key.EndPoint)
+	if key.EndPoint == "" {
+		key.EndPoint = "https://api.openai.com"
+	}
+	targetUrl, _ := url.ParseRequestURI(key.EndPoint + c.Request.URL.String())
+	log.Println(targetUrl)
 	proxy := httputil.NewSingleHostReverseProxy(targetUrl)
 	proxy.Director = func(req *http.Request) {
-		req.Header.Set("Content-Type", "application/json")
+		req.Host = targetUrl.Host
+		req.URL.Scheme = targetUrl.Scheme
+		req.URL.Host = targetUrl.Host
+
 		req.Header.Set("Authorization", "Bearer "+key.Key)
 	}
 
