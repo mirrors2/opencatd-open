@@ -10,6 +10,8 @@ curl $AZURE_OPENAI_ENDPOINT/openai/deployments/gpt-35-turbo/chat/completions?api
     "messages": [{"role": "user", "content": "你好"}]
   }'
 
+https://learn.microsoft.com/zh-cn/rest/api/cognitiveservices/azureopenaistable/models/list?tabs=HTTP
+
   curl $AZURE_OPENAI_ENDPOINT/openai/deployments?api-version=2022-12-01 \
   -H "Content-Type: application/json" \
   -H "api-key: $AZURE_OPENAI_KEY" \
