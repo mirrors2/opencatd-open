@@ -238,7 +238,7 @@ func TransReq(chatreq *openai.ChatCompletionRequest) (*bytes.Buffer, error) {
 		MaxTokensToSample: chatreq.MaxTokens,
 	}
 	if transReq.MaxTokensToSample == 0 {
-		transReq.MaxTokensToSample = 1000000
+		transReq.MaxTokensToSample = 100000
 	}
 	var prompt string
 	for _, msg := range chatreq.Messages {
