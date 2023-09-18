@@ -42,6 +42,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"opencatd-open/pkg/tokenizer"
 	"opencatd-open/store"
 	"strings"
 	"sync"
@@ -135,7 +136,7 @@ func ClaudeProxy(c *gin.Context) {
 		return
 	}
 
-	key, err := store.SelectKeyCache("anthropic")
+	key, err := store.SelectKeyCache("claude") //anthropic
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{
@@ -160,7 +161,7 @@ func ClaudeProxy(c *gin.Context) {
 	}
 	chatlog.UserID = int(lu.ID)
 
-	// todo calc prompt token
+	chatlog.PromptCount = tokenizer.NumTokensFromStr(complete.Prompt, complete.Model)
 
 	if key.EndPoint == "" {
 		key.EndPoint = "https://api.anthropic.com"
@@ -192,6 +193,7 @@ func ClaudeProxy(c *gin.Context) {
 				log.Println(err)
 				return nil
 			}
+			chatlog.CompletionCount = tokenizer.NumTokensFromStr(complete_resp.Completion, chatlog.Model)
 		} else {
 			var completion string
 			for {
@@ -213,10 +215,12 @@ func ClaudeProxy(c *gin.Context) {
 				}
 			}
 			log.Println("completion:", completion)
+			chatlog.CompletionCount = tokenizer.NumTokensFromStr(completion, chatlog.Model)
 		}
-		chatlog.TotalTokens = chatlog.PromptCount + chatlog.CompletionCount
 
-		// todo calc cost
+		// calc cost
+		chatlog.TotalTokens = chatlog.PromptCount + chatlog.CompletionCount
+		chatlog.Cost = fmt.Sprintf("%.6f", tokenizer.Cost(chatlog.Model, chatlog.PromptCount, chatlog.CompletionCount))
 
 		if err := store.Record(&chatlog); err != nil {
 			log.Println(err)
@@ -259,7 +263,7 @@ func TransReq(chatreq *openai.ChatCompletionRequest) (*bytes.Buffer, error) {
 	return payload, nil
 }
 
-func TransRsp(c *gin.Context, isStream bool, reader *bufio.Reader) {
+func TransRsp(c *gin.Context, isStream bool, chatlog store.Tokens, reader *bufio.Reader) {
 	if !isStream {
 		var completersp CompleteResponse
 		var chatrsp openai.ChatCompletionResponse
@@ -286,13 +290,24 @@ func TransRsp(c *gin.Context, isStream bool, reader *bufio.Reader) {
 			})
 			return
 		}
+		chatlog.CompletionCount = tokenizer.NumTokensFromStr(completersp.Completion, chatlog.Model)
+		chatlog.TotalTokens = chatlog.PromptCount + chatlog.CompletionCount
+		chatlog.Cost = fmt.Sprintf("%.6f", tokenizer.Cost(chatlog.Model, chatlog.PromptCount, chatlog.CompletionCount))
+		if err := store.Record(&chatlog); err != nil {
+			log.Println(err)
+		}
+		if err := store.SumDaily(chatlog.UserID); err != nil {
+			log.Println(err)
+		}
+
 		c.JSON(http.StatusOK, payload)
 		return
 	} else {
 		var (
-			wg       sync.WaitGroup
-			dataChan = make(chan string)
-			stopChan = make(chan bool)
+			wg            sync.WaitGroup
+			dataChan      = make(chan string)
+			stopChan      = make(chan bool)
+			complete_resp string
 		)
 		wg.Add(2)
 		go func() {
@@ -305,6 +320,7 @@ func TransRsp(c *gin.Context, isStream bool, reader *bufio.Reader) {
 						json.NewDecoder(strings.NewReader(line[6:])).Decode(&result)
 						if result.StopReason == "" {
 							if result.Completion != "" {
+								complete_resp += result.Completion
 								chatrsp := openai.ChatCompletionStreamResponse{
 									ID:      result.LogID,
 									Model:   result.Model,
@@ -372,6 +388,15 @@ func TransRsp(c *gin.Context, isStream bool, reader *bufio.Reader) {
 			}
 		}()
 		wg.Wait()
+		chatlog.CompletionCount = tokenizer.NumTokensFromStr(complete_resp, chatlog.Model)
+		chatlog.TotalTokens = chatlog.PromptCount + chatlog.CompletionCount
+		chatlog.Cost = fmt.Sprintf("%.6f", tokenizer.Cost(chatlog.Model, chatlog.PromptCount, chatlog.CompletionCount))
+		if err := store.Record(&chatlog); err != nil {
+			log.Println(err)
+		}
+		if err := store.SumDaily(chatlog.UserID); err != nil {
+			log.Println(err)
+		}
 	}
 }
 
