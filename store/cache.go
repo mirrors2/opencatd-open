@@ -1,8 +1,10 @@
 package store
 
 import (
+	"errors"
 	"log"
 	"math/rand"
+	"time"
 
 	"github.com/Sakurasan/to"
 	"github.com/patrickmn/go-cache"
@@ -38,6 +40,24 @@ func FromKeyCacheRandomItemKey() Key {
 	idx := rand.Intn(len(items))
 	item := items[to.String(idx)]
 	return item.Object.(Key)
+}
+
+func SelectKeyCache(apitype string) (Key, error) {
+	var keys []Key
+	items := KeysCache.Items()
+	for _, item := range items {
+		if item.Object.(Key).ApiType == apitype {
+			keys = append(keys, item.Object.(Key))
+		}
+	}
+	if len(keys) == 0 {
+		return Key{}, errors.New("No key found")
+	} else if len(keys) == 1 {
+		return keys[0], nil
+	}
+	rand.Seed(time.Now().UnixNano())
+	idx := rand.Intn(len(keys))
+	return keys[idx], nil
 }
 
 func LoadAuthCache() {

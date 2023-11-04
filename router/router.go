@@ -3,27 +3,36 @@ package router
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"opencatd-open/pkg/azureopenai"
+	"opencatd-open/pkg/claude"
+	"opencatd-open/pkg/tokenizer"
 	"opencatd-open/store"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/Sakurasan/to"
 	"github.com/duke-git/lancet/v2/cryptor"
+	"github.com/faiface/beep"
+	"github.com/faiface/beep/mp3"
+	"github.com/faiface/beep/wav"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/pkoukk/tiktoken-go"
 	"github.com/sashabaranov/go-openai"
+	"gopkg.in/vansante/go-ffprobe.v2"
 	"gorm.io/gorm"
 )
 
@@ -278,7 +287,32 @@ func HandleAddKey(c *gin.Context) {
 			return
 		}
 		k := &store.Key{
-			ApiType:      "azure_openai",
+			ApiType:      "azure",
+			Name:         body.Name,
+			Key:          body.Key,
+			ResourceNmae: keynames[1],
+			EndPoint:     body.Endpoint,
+		}
+		if err := store.CreateKey(k); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{
+				"message": err.Error(),
+			}})
+			return
+		}
+	} else if strings.HasPrefix(body.Name, "claude.") {
+		keynames := strings.Split(body.Name, ".")
+		if len(keynames) < 2 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{
+				"message": "Invalid Key Name",
+			}})
+			return
+		}
+		if body.Endpoint == "" {
+			body.Endpoint = "https://api.anthropic.com"
+		}
+		k := &store.Key{
+			// ApiType:      "anthropic",
+			ApiType:      "claude",
 			Name:         body.Name,
 			Key:          body.Key,
 			ResourceNmae: keynames[1],
@@ -427,6 +461,7 @@ func HandleProy(c *gin.Context) {
 		chatreq    = openai.ChatCompletionRequest{}
 		chatres    = openai.ChatCompletionResponse{}
 		chatlog    store.Tokens
+		onekey     store.Key
 		pre_prompt string
 		req        *http.Request
 		err        error
@@ -435,6 +470,15 @@ func HandleProy(c *gin.Context) {
 	auth := c.Request.Header.Get("Authorization")
 	if len(auth) > 7 && auth[:7] == "Bearer " {
 		localuser = store.IsExistAuthCache(auth[7:])
+		c.Set("localuser", auth[7:])
+	}
+	if c.Request.URL.Path == "/v1/complete" {
+		claude.ClaudeProxy(c)
+		return
+	}
+	if c.Request.URL.Path == "/v1/audio/transcriptions" {
+		WhisperProxy(c)
+		return
 	}
 
 	if c.Request.URL.Path == "/v1/chat/completions" && localuser {
@@ -444,25 +488,45 @@ func HandleProy(c *gin.Context) {
 			}})
 			return
 		}
-		onekey := store.FromKeyCacheRandomItemKey()
 
 		if err := c.BindJSON(&chatreq); err != nil {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
+
 		chatlog.Model = chatreq.Model
 		for _, m := range chatreq.Messages {
 			pre_prompt += m.Content + "\n"
 		}
 		chatlog.PromptHash = cryptor.Md5String(pre_prompt)
-		chatlog.PromptCount = NumTokensFromMessages(chatreq.Messages, chatreq.Model)
+		chatlog.PromptCount = tokenizer.NumTokensFromMessages(chatreq.Messages, chatreq.Model)
 		isStream = chatreq.Stream
 		chatlog.UserID, _ = store.GetUserID(auth[7:])
 
 		var body bytes.Buffer
 		json.NewEncoder(&body).Encode(chatreq)
+
+		if strings.HasPrefix(chatreq.Model, "claude-") {
+			onekey, err = store.SelectKeyCache("claude")
+			if err != nil {
+				c.AbortWithError(http.StatusForbidden, err)
+			}
+		} else {
+			onekey = store.FromKeyCacheRandomItemKey()
+		}
+
 		// 创建 API 请求
 		switch onekey.ApiType {
+		case "claude":
+			payload, _ := claude.TransReq(&chatreq)
+			buildurl := "https://api.anthropic.com/v1/complete"
+			req, err = http.NewRequest("POST", buildurl, payload)
+			req.Header.Add("accept", "application/json")
+			req.Header.Add("anthropic-version", "2023-06-01")
+			req.Header.Add("x-api-key", onekey.Key)
+			req.Header.Add("content-type", "application/json")
+		case "azure":
+			fallthrough
 		case "azure_openai":
 			var buildurl string
 			var apiVersion = "2023-05-15"
@@ -496,7 +560,7 @@ func HandleProy(c *gin.Context) {
 		req, err = http.NewRequest(c.Request.Method, baseUrl+c.Request.RequestURI, c.Request.Body)
 		if err != nil {
 			log.Println(err)
-			c.JSON(http.StatusOK, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		req.Header = c.Request.Header
@@ -505,7 +569,7 @@ func HandleProy(c *gin.Context) {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	defer resp.Body.Close()
@@ -537,41 +601,49 @@ func HandleProy(c *gin.Context) {
 	reader := bufio.NewReader(resp.Body)
 
 	if resp.StatusCode == 200 && localuser {
-		if isStream {
-			contentCh := fetchResponseContent(c, reader)
-			var buffer bytes.Buffer
-			for content := range contentCh {
-				buffer.WriteString(content)
+		switch onekey.ApiType {
+		case "claude":
+			claude.TransRsp(c, isStream, chatlog, reader)
+			return
+		case "openai", "azure", "azure_openai":
+			fallthrough
+		default:
+			if isStream {
+				contentCh := fetchResponseContent(c, reader)
+				var buffer bytes.Buffer
+				for content := range contentCh {
+					buffer.WriteString(content)
+				}
+				chatlog.CompletionCount = tokenizer.NumTokensFromStr(buffer.String(), chatreq.Model)
+				chatlog.TotalTokens = chatlog.PromptCount + chatlog.CompletionCount
+				chatlog.Cost = fmt.Sprintf("%.6f", tokenizer.Cost(chatlog.Model, chatlog.PromptCount, chatlog.CompletionCount))
+				if err := store.Record(&chatlog); err != nil {
+					log.Println(err)
+				}
+				if err := store.SumDaily(chatlog.UserID); err != nil {
+					log.Println(err)
+				}
+				return
 			}
-			chatlog.CompletionCount = NumTokensFromStr(buffer.String(), chatreq.Model)
-			chatlog.TotalTokens = chatlog.PromptCount + chatlog.CompletionCount
-			chatlog.Cost = fmt.Sprintf("%.6f", Cost(chatlog.Model, chatlog.PromptCount, chatlog.CompletionCount))
+			res, err := io.ReadAll(reader)
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{
+					"message": err.Error(),
+				}})
+				return
+			}
+			reader = bufio.NewReader(bytes.NewBuffer(res))
+			json.NewDecoder(bytes.NewBuffer(res)).Decode(&chatres)
+			chatlog.PromptCount = chatres.Usage.PromptTokens
+			chatlog.CompletionCount = chatres.Usage.CompletionTokens
+			chatlog.TotalTokens = chatres.Usage.TotalTokens
+			chatlog.Cost = fmt.Sprintf("%.6f", tokenizer.Cost(chatlog.Model, chatlog.PromptCount, chatlog.CompletionCount))
 			if err := store.Record(&chatlog); err != nil {
 				log.Println(err)
 			}
 			if err := store.SumDaily(chatlog.UserID); err != nil {
 				log.Println(err)
 			}
-			return
-		}
-		res, err := io.ReadAll(reader)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{
-				"message": err.Error(),
-			}})
-			return
-		}
-		reader = bufio.NewReader(bytes.NewBuffer(res))
-		json.NewDecoder(bytes.NewBuffer(res)).Decode(&chatres)
-		chatlog.PromptCount = chatres.Usage.PromptTokens
-		chatlog.CompletionCount = chatres.Usage.CompletionTokens
-		chatlog.TotalTokens = chatres.Usage.TotalTokens
-		chatlog.Cost = fmt.Sprintf("%.6f", Cost(chatlog.Model, chatlog.PromptCount, chatlog.CompletionCount))
-		if err := store.Record(&chatlog); err != nil {
-			log.Println(err)
-		}
-		if err := store.SumDaily(chatlog.UserID); err != nil {
-			log.Println(err)
 		}
 
 	}
@@ -631,33 +703,6 @@ func HandleReverseProxy(c *gin.Context) {
 
 	proxy.ServeHTTP(c.Writer, req)
 
-}
-func Cost(model string, promptCount, completionCount int) float64 {
-	var cost, prompt, completion float64
-	prompt = float64(promptCount)
-	completion = float64(completionCount)
-
-	switch model {
-	case "gpt-3.5-turbo-0301":
-		cost = 0.002 * float64((prompt+completion)/1000)
-	case "gpt-3.5-turbo", "gpt-3.5-turbo-0613":
-		cost = 0.0015*float64((prompt)/1000) + 0.002*float64(completion/1000)
-	case "gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613":
-		cost = 0.003*float64((prompt)/1000) + 0.004*float64(completion/1000)
-	case "gpt-4", "gpt-4-0613", "gpt-4-0314":
-		cost = 0.03*float64(prompt/1000) + 0.06*float64(completion/1000)
-	case "gpt-4-32k", "gpt-4-32k-0613":
-		cost = 0.06*float64(prompt/1000) + 0.12*float64(completion/1000)
-	default:
-		if strings.Contains(model, "gpt-3.5-turbo") {
-			cost = 0.003 * float64((prompt+completion)/1000)
-		} else if strings.Contains(model, "gpt-4") {
-			cost = 0.06 * float64((prompt+completion)/1000)
-		} else {
-			cost = 0.002 * float64((prompt+completion)/1000)
-		}
-	}
-	return cost
 }
 
 func HandleUsage(c *gin.Context) {
@@ -737,75 +782,163 @@ func fetchResponseContent(ctx *gin.Context, responseBody *bufio.Reader) <-chan s
 	return contentCh
 }
 
-func NumTokensFromMessages(messages []openai.ChatCompletionMessage, model string) (numTokens int) {
-	tkm, err := tiktoken.EncodingForModel(model)
-	if err != nil {
-		err = fmt.Errorf("EncodingForModel: %v", err)
-		log.Println(err)
-		return
-	}
-
-	var tokensPerMessage, tokensPerName int
-
-	switch model {
-	case "gpt-3.5-turbo",
-		"gpt-3.5-turbo-0613",
-		"gpt-3.5-turbo-16k",
-		"gpt-3.5-turbo-16k-0613",
-		"gpt-4",
-		"gpt-4-0314",
-		"gpt-4-0613",
-		"gpt-4-32k",
-		"gpt-4-32k-0314",
-		"gpt-4-32k-0613":
-		tokensPerMessage = 3
-		tokensPerName = 1
-	case "gpt-3.5-turbo-0301":
-		tokensPerMessage = 4 // every message follows <|start|>{role/name}\n{content}<|end|>\n
-		tokensPerName = -1   // if there's a name, the role is omitted
-	default:
-		if strings.Contains(model, "gpt-3.5-turbo") {
-			log.Println("warning: gpt-3.5-turbo may update over time. Returning num tokens assuming gpt-3.5-turbo-0613.")
-			return NumTokensFromMessages(messages, "gpt-3.5-turbo-0613")
-		} else if strings.Contains(model, "gpt-4") {
-			log.Println("warning: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613.")
-			return NumTokensFromMessages(messages, "gpt-4-0613")
-		} else {
-			err = fmt.Errorf("warning: unknown model [%s]. Use default calculation method converted tokens.", model)
-			log.Println(err)
-			return NumTokensFromMessages(messages, "gpt-3.5-turbo-0613")
-		}
-	}
-
-	for _, message := range messages {
-		numTokens += tokensPerMessage
-		numTokens += len(tkm.Encode(message.Content, nil, nil))
-		numTokens += len(tkm.Encode(message.Role, nil, nil))
-		numTokens += len(tkm.Encode(message.Name, nil, nil))
-		if message.Name != "" {
-			numTokens += tokensPerName
-		}
-	}
-	numTokens += 3
-	return numTokens
-}
-
-func NumTokensFromStr(messages string, model string) (num_tokens int) {
-	tkm, err := tiktoken.EncodingForModel(model)
-	if err != nil {
-		err = fmt.Errorf("EncodingForModel: %v", err)
-		fmt.Println(err)
-		return
-	}
-
-	num_tokens += len(tkm.Encode(messages, nil, nil))
-	return num_tokens
-}
-
 func modelmap(in string) string {
 	// gpt-3.5-turbo -> gpt-35-turbo
 	if strings.Contains(in, ".") {
 		return strings.ReplaceAll(in, ".", "")
 	}
 	return in
+}
+
+func WhisperProxy(c *gin.Context) {
+	var chatlog store.Tokens
+
+	byteBody, _ := io.ReadAll(c.Request.Body)
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(byteBody))
+
+	model, _ := c.GetPostForm("model")
+
+	key, err := store.SelectKeyCache("openai")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": gin.H{
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	chatlog.Model = model
+
+	token, _ := c.Get("localuser")
+
+	lu, err := store.GetUserByToken(token.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": gin.H{
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+	chatlog.UserID = int(lu.ID)
+
+	if err := ParseWhisperRequestTokens(c, &chatlog, byteBody); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": gin.H{
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+	if key.EndPoint == "" {
+		key.EndPoint = "https://api.openai.com"
+	}
+	targetUrl, _ := url.ParseRequestURI(key.EndPoint + c.Request.URL.String())
+	log.Println(targetUrl)
+	proxy := httputil.NewSingleHostReverseProxy(targetUrl)
+	proxy.Director = func(req *http.Request) {
+		req.Host = targetUrl.Host
+		req.URL.Scheme = targetUrl.Scheme
+		req.URL.Host = targetUrl.Host
+
+		req.Header.Set("Authorization", "Bearer "+key.Key)
+	}
+
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		if resp.StatusCode != http.StatusOK {
+			return nil
+		}
+		chatlog.TotalTokens = chatlog.PromptCount + chatlog.CompletionCount
+		chatlog.Cost = fmt.Sprintf("%.6f", tokenizer.Cost(chatlog.Model, chatlog.PromptCount, chatlog.CompletionCount))
+		if err := store.Record(&chatlog); err != nil {
+			log.Println(err)
+		}
+		if err := store.SumDaily(chatlog.UserID); err != nil {
+			log.Println(err)
+		}
+		return nil
+	}
+	proxy.ServeHTTP(c.Writer, c.Request)
+}
+
+func probe(fileReader io.Reader) (time.Duration, error) {
+	ctx, cancelFn := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelFn()
+
+	data, err := ffprobe.ProbeReader(ctx, fileReader)
+	if err != nil {
+		return 0, err
+	}
+
+	duration := data.Format.DurationSeconds
+	pduration, err := time.ParseDuration(fmt.Sprintf("%fs", duration))
+	if err != nil {
+		return 0, fmt.Errorf("Error parsing duration: %s", err)
+	}
+	return pduration, nil
+}
+
+func getAudioDuration(file *multipart.FileHeader) (time.Duration, error) {
+	var (
+		streamer beep.StreamSeekCloser
+		format   beep.Format
+		err      error
+	)
+
+	f, err := file.Open()
+	defer f.Close()
+
+	// Get the file extension to determine the audio file type
+	fileType := filepath.Ext(file.Filename)
+
+	switch fileType {
+	case ".mp3":
+		streamer, format, err = mp3.Decode(f)
+	case ".wav":
+		streamer, format, err = wav.Decode(f)
+	case ".m4a":
+		duration, err := probe(f)
+		if err != nil {
+			return 0, err
+		}
+		return duration, nil
+	default:
+		return 0, errors.New("unsupported audio file format")
+	}
+
+	if err != nil {
+		return 0, err
+	}
+	defer streamer.Close()
+
+	// Calculate the audio file's duration.
+	numSamples := streamer.Len()
+	sampleRate := format.SampleRate
+	duration := time.Duration(numSamples) * time.Second / time.Duration(sampleRate)
+
+	return duration, nil
+}
+
+func ParseWhisperRequestTokens(c *gin.Context, usage *store.Tokens, byteBody []byte) error {
+	file, _ := c.FormFile("file")
+	model, _ := c.GetPostForm("model")
+	usage.Model = model
+
+	if file != nil {
+		duration, err := getAudioDuration(file)
+		if err != nil {
+			return fmt.Errorf("Error getting audio duration:%s", err)
+		}
+
+		if duration > 5*time.Minute {
+			return fmt.Errorf("Audio duration exceeds 5 minutes")
+		}
+		// 计算时长，四舍五入到最接近的秒数
+		usage.PromptCount = int(duration.Round(time.Second).Seconds())
+	}
+
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(byteBody))
+
+	return nil
 }

@@ -15,6 +15,7 @@ OpenCat for Team的开源实现
 | 任务 | 完成情况 |
 | --- | --- |
 |[Azure OpenAI](./doc/azure.md) | ✅|
+|[Claude](./doc/azure.md) | ✅|
 | ... | ... |
 
 
