@@ -83,17 +83,25 @@ func Cost(model string, promptCount, completionCount int) float64 {
 	switch model {
 	case "gpt-3.5-turbo-0301":
 		cost = 0.002 * float64((prompt+completion)/1000)
-	case "gpt-3.5-turbo", "gpt-3.5-turbo-0613":
+	case "gpt-3.5-turbo", "gpt-3.5-turbo-0613", "gpt-3.5-turbo-1106":
 		cost = 0.0015*float64((prompt)/1000) + 0.002*float64(completion/1000)
 	case "gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613":
 		cost = 0.003*float64((prompt)/1000) + 0.004*float64(completion/1000)
+	case "gpt-3.5-turbo-instruct", "gpt-3.5-turbo-instruct-0914":
+		cost = 0.0015*float64((prompt)/1000) + 0.002*float64(completion/1000)
 	case "gpt-4", "gpt-4-0613", "gpt-4-0314":
 		cost = 0.03*float64(prompt/1000) + 0.06*float64(completion/1000)
-	case "gpt-4-32k", "gpt-4-32k-0613":
+	case "gpt-4-32k", "gpt-4-32k-0314", "gpt-4-32k-0613":
 		cost = 0.06*float64(prompt/1000) + 0.12*float64(completion/1000)
+	case "gpt-4-1106-preview", "gpt-4-vision-preview":
+		cost = 0.01*float64(prompt/1000) + 0.03*float64(completion/1000)
 	case "whisper-1":
 		// 0.006$/min
 		cost = 0.006 * float64(prompt+completion) / 60
+	case "tts-1":
+		cost = 0.015 * float64(prompt+completion)
+	case "tts-1-hd":
+		cost = 0.03 * float64(prompt+completion)
 	// claude /million tokens
 	case "claude-v1", "claude-v1-100k":
 		cost = 11.02/1000000*float64(prompt) + (32.68/1000000)*float64(completion)
