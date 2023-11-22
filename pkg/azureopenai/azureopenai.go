@@ -16,6 +16,9 @@ https://learn.microsoft.com/zh-cn/rest/api/cognitiveservices/azureopenaistable/m
   -H "Content-Type: application/json" \
   -H "api-key: $AZURE_OPENAI_KEY" \
 
+> GPT-4 Turbo
+https://techcommunity.microsoft.com/t5/ai-azure-ai-services-blog/azure-openai-service-launches-gpt-4-turbo-and-gpt-3-5-turbo-1106/ba-p/3985962
+
 */
 
 package azureopenai
