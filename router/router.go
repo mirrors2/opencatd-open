@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"opencatd-open/pkg/azureopenai"
 	"opencatd-open/pkg/claude"
+	oai "opencatd-open/pkg/openai"
 	"opencatd-open/pkg/tokenizer"
 	"opencatd-open/store"
 	"os"
@@ -478,6 +479,10 @@ func HandleProy(c *gin.Context) {
 	}
 	if c.Request.URL.Path == "/v1/audio/transcriptions" {
 		WhisperProxy(c)
+		return
+	}
+	if c.Request.URL.Path == "/v1/audio/speech" {
+		oai.SpeechHandler(c)
 		return
 	}
 

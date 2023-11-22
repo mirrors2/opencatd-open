@@ -107,7 +107,7 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = 11.02/1000000*float64(prompt) + (32.68/1000000)*float64(completion)
 	case "claude-instant-v1", "claude-instant-v1-100k":
 		cost = (1.63/1000000)*float64(prompt) + (5.51/1000000)*float64(completion)
-	case "claude-2":
+	case "claude-2", "claude-2.1":
 		cost = (11.02/1000000)*float64(prompt) + (32.68/1000000)*float64(completion)
 	default:
 		if strings.Contains(model, "gpt-3.5-turbo") {
