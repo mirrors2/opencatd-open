@@ -116,13 +116,13 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = float64(0.04 * completion)
 	case "dall-e-3.1024x1792", "dall-e-3.1792x1024":
 		cost = float64(0.08 * completion)
-	case "dall-e-3.256x256.HD":
+	case "dall-e-3.256x256.hd":
 		cost = float64(0.08 * completion)
-	case "dall-e-3.512x512.HD":
+	case "dall-e-3.512x512.hd":
 		cost = float64(0.08 * completion)
-	case "dall-e-3.1024x1024.HD":
+	case "dall-e-3.1024x1024.hd":
 		cost = float64(0.08 * completion)
-	case "dall-e-3.1024x1792.HD", "dall-e-3.1792x1024.HD":
+	case "dall-e-3.1024x1792.hd", "dall-e-3.1792x1024.hd":
 		cost = float64(0.12 * completion)
 
 	// claude /million tokens

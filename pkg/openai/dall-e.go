@@ -51,7 +51,6 @@ func DalleHandler(c *gin.Context) {
 	model := dalleRequest.Model
 
 	var chatlog store.Tokens
-	chatlog.Model = model
 	chatlog.CompletionCount = dalleRequest.N
 
 	if model == "dall-e" {
@@ -59,7 +58,7 @@ func DalleHandler(c *gin.Context) {
 	}
 	model = model + "." + dalleRequest.Size
 
-	if model == "dall-e-2" {
+	if dalleRequest.Model == "dall-e-2" || dalleRequest.Model == "dall-e" {
 		if !slice.Contain([]string{"256x256", "512x512", "1024x1024"}, dalleRequest.Size) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": gin.H{
@@ -68,7 +67,7 @@ func DalleHandler(c *gin.Context) {
 			})
 			return
 		}
-	} else if model == "dall-e-3" {
+	} else if dalleRequest.Model == "dall-e-3" {
 		if !slice.Contain([]string{"256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"}, dalleRequest.Size) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": gin.H{
@@ -77,8 +76,8 @@ func DalleHandler(c *gin.Context) {
 			})
 			return
 		}
-		if dalleRequest.Quality == "HD" {
-			model = model + ".HD"
+		if dalleRequest.Quality == "hd" {
+			model = model + ".hd"
 		}
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -88,6 +87,7 @@ func DalleHandler(c *gin.Context) {
 		})
 		return
 	}
+	chatlog.Model = model
 
 	token, _ := c.Get("localuser")
 
