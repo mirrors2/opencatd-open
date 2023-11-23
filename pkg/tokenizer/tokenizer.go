@@ -102,6 +102,29 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = 0.015 * float64(prompt+completion)
 	case "tts-1-hd":
 		cost = 0.03 * float64(prompt+completion)
+	case "dall-e-2.256x256":
+		cost = float64(0.016 * completion)
+	case "dall-e-2.512x512":
+		cost = float64(0.018 * completion)
+	case "dall-e-2.1024x1024":
+		cost = float64(0.02 * completion)
+	case "dall-e-3.256x256":
+		cost = float64(0.04 * completion)
+	case "dall-e-3.512x512":
+		cost = float64(0.04 * completion)
+	case "dall-e-3.1024x1024":
+		cost = float64(0.04 * completion)
+	case "dall-e-3.1024x1792", "dall-e-3.1792x1024":
+		cost = float64(0.08 * completion)
+	case "dall-e-3.256x256.HD":
+		cost = float64(0.08 * completion)
+	case "dall-e-3.512x512.HD":
+		cost = float64(0.08 * completion)
+	case "dall-e-3.1024x1024.HD":
+		cost = float64(0.08 * completion)
+	case "dall-e-3.1024x1792.HD", "dall-e-3.1792x1024.HD":
+		cost = float64(0.12 * completion)
+
 	// claude /million tokens
 	case "claude-v1", "claude-v1-100k":
 		cost = 11.02/1000000*float64(prompt) + (32.68/1000000)*float64(completion)

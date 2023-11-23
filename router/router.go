@@ -486,6 +486,11 @@ func HandleProy(c *gin.Context) {
 		return
 	}
 
+	if c.Request.URL.Path == "/v1/images/generations" {
+		oai.DalleHandler(c)
+		return
+	}
+
 	if c.Request.URL.Path == "/v1/chat/completions" && localuser {
 		if store.KeysCache.ItemCount() == 0 {
 			c.JSON(http.StatusBadGateway, gin.H{"error": gin.H{

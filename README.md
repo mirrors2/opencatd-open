@@ -10,6 +10,8 @@ OpenCat for Team的开源实现
 
 ~~基本~~实现了opencatd的全部功能
 
+(openai附属能力:whisper,tts,dall-e(text to image)...)
+
 ## Extra Support:
 
 | 任务 | 完成情况 |
