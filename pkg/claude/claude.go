@@ -22,11 +22,26 @@ data: {"completion":"","stop_reason":"stop_sequence","model":"claude-2.0","stop"
 
 # Model Pricing
 
-Claude Instant |100,000 tokens |Prompt $1.63/million tokens |Completion $5.51/million tokens
+Claude Instant |100,000 tokens |Prompt $1.63/million tokens  |Completion $5.51/million tokens
 
-Claude 2 |100,000 tokens |Prompt $11.02/million tokens |Completion $32.68/million tokens
+Claude 2       |100,000 tokens |Prompt $11.02/million tokens |Completion $32.68/million tokens
 *Claude 1 is still accessible and offered at the same price as Claude 2.
 
+# AWS
+https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-service.html
+https://aws.amazon.com/cn/bedrock/pricing/
+Anthropic models	Price for 1000 input tokens	Price for 1000 output tokens
+Claude Instant      $0.00163                    $0.00551
+
+Claude              $0.01102                    $0.03268
+
+https://docs.aws.amazon.com/bedrock/latest/userguide/endpointsTable.html
+地区名称				 地区		 端点									 	  协议
+美国东部（弗吉尼亚北部）	美国东部1	bedrock-runtime.us-east-1.amazonaws.com		 HTTPS
+								   bedrock-runtime-fips.us-east-1.amazonaws.com	HTTPS
+美国西部（俄勒冈州）	美国西2号	 bedrock-runtime.us-west-2.amazonaws.com		 HTTPS
+								bedrock-runtime-fips.us-west-2.amazonaws.com	HTTPS
+亚太地区（新加坡）	ap-东南-1		bedrock-runtime.ap-southeast-1.amazonaws.com	HTTPS
 */
 
 // package anthropic
@@ -53,7 +68,8 @@ import (
 )
 
 var (
-	ClaudeUrl = "https://api.anthropic.com/v1/complete"
+	ClaudeUrl       = "https://api.anthropic.com/v1/complete"
+	MessageEndpoint = "https://api.anthropic.com/v1/messages"
 )
 
 type MessageModule struct {

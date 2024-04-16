@@ -499,6 +499,9 @@ func HandleProy(c *gin.Context) {
 			return
 		}
 
+		ChatHandler(c)
+		return
+
 		if err := c.BindJSON(&chatreq); err != nil {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
