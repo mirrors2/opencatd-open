@@ -17,6 +17,7 @@ import (
 )
 
 const (
+	AzureApiVersion = "2024-02-01"
 	OpenAI_Endpoint = "https://api.openai.com/v1/chat/completions"
 )
 
@@ -202,22 +203,34 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 
 	var req *http.Request
 
-	if onekey.EndPoint != "" { // 优先key的endpoint
-		req, err = http.NewRequest(c.Request.Method, onekey.EndPoint+c.Request.RequestURI, bytes.NewReader(chatReq.ToByteJson()))
-	} else {
-		if BaseURL != "" { // 其次BaseURL
-			req, err = http.NewRequest(c.Request.Method, BaseURL+c.Request.RequestURI, bytes.NewReader(chatReq.ToByteJson()))
-		} else { // 最后是gateway的endpoint
-			req, err = http.NewRequest(c.Request.Method, AIGateWay_Endpoint, bytes.NewReader(chatReq.ToByteJson()))
+	switch onekey.ApiType {
+	case "azure":
+		var buildurl string
+		if onekey.EndPoint != "" {
+			buildurl = fmt.Sprintf("%s/openai/deployments/%s/chat/completions?api-version=%s", onekey.EndPoint, modelmap(chatReq.Model), AzureApiVersion)
+		} else {
+			buildurl = fmt.Sprintf("https://%s.openai.azure.com/openai/deployments/%s/chat/completions?api-version=%s", onekey.ResourceNmae, modelmap(chatReq.Model), AzureApiVersion)
 		}
+		req, err = http.NewRequest(c.Request.Method, buildurl, bytes.NewReader(chatReq.ToByteJson()))
+		req.Header = c.Request.Header
+		req.Header.Set("api-key", onekey.Key)
+	default:
+		if onekey.EndPoint != "" { // 优先key的endpoint
+			req, err = http.NewRequest(c.Request.Method, onekey.EndPoint+c.Request.RequestURI, bytes.NewReader(chatReq.ToByteJson()))
+		} else {
+			if BaseURL != "" { // 其次BaseURL
+				req, err = http.NewRequest(c.Request.Method, BaseURL+c.Request.RequestURI, bytes.NewReader(chatReq.ToByteJson()))
+			} else { // 最后是gateway的endpoint
+				req, err = http.NewRequest(c.Request.Method, AIGateWay_Endpoint, bytes.NewReader(chatReq.ToByteJson()))
+			}
+		}
+		req.Header = c.Request.Header
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", onekey.Key))
 	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	req.Header = c.Request.Header
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", onekey.Key))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -299,6 +312,14 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 	if err := store.SumDaily(usagelog.UserID); err != nil {
 		log.Println(err)
 	}
+}
+
+func modelmap(in string) string {
+	// gpt-3.5-turbo -> gpt-35-turbo
+	if strings.Contains(in, ".") {
+		return strings.ReplaceAll(in, ".", "")
+	}
+	return in
 }
 
 type ErrResponse struct {
