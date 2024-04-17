@@ -118,7 +118,7 @@ type ClaudeStreamResponse struct {
 
 func ChatMessages(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 
-	onekey, err := store.SelectKeyCache("openai")
+	onekey, err := store.SelectKeyCache("claude")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -128,7 +128,7 @@ func ChatMessages(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 	var claudReq ChatRequest
 	claudReq.Model = chatReq.Model
 	claudReq.Stream = chatReq.Stream
-	claudReq.Temperature = chatReq.Temperature
+	// claudReq.Temperature = chatReq.Temperature
 	claudReq.TopP = chatReq.TopP
 	claudReq.MaxTokens = 4096
 
@@ -181,7 +181,7 @@ func ChatMessages(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 
 	usagelog.PromptCount = tokenizer.NumTokensFromStr(prompt, chatReq.Model)
 
-	req, _ := http.NewRequest("POST", MessageEndpoint, strings.NewReader(fmt.Sprintf("%v", bytes.NewReader(claudReq.ByteJson()))))
+	req, _ := http.NewRequest("POST", MessageEndpoint, bytes.NewReader(claudReq.ByteJson()))
 	req.Header.Set("x-api-key", onekey.Key)
 	req.Header.Set("anthropic-version", "2023-06-01")
 	req.Header.Set("Content-Type", "application/json")
@@ -200,7 +200,7 @@ func ChatMessages(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 
 	teeReader := io.TeeReader(rsp.Body, c.Writer)
 
-	dataChan := make(chan string, 1)
+	dataChan := make(chan string)
 	// stopChan := make(chan bool)
 
 	var result string
