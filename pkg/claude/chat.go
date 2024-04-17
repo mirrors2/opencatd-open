@@ -26,7 +26,7 @@ func ChatTextCompletions(c *gin.Context, chatReq *openai.ChatCompletionRequest) 
 
 }
 
-type ClaudeRequest struct {
+type ChatRequest struct {
 	Model       string  `json:"model,omitempty"`
 	Messages    any     `json:"messages,omitempty"`
 	MaxTokens   int     `json:"max_tokens,omitempty"`
@@ -37,34 +37,34 @@ type ClaudeRequest struct {
 	Temperature float64 `json:"temperature,omitempty"`
 }
 
-func (c *ClaudeRequest) ByteJson() []byte {
+func (c *ChatRequest) ByteJson() []byte {
 	bytejson, _ := json.Marshal(c)
 	return bytejson
 }
 
-type ClaudeMessages struct {
+type ChatMessage struct {
 	Role    string `json:"role,omitempty"`
 	Content string `json:"content,omitempty"`
 }
 
 type VisionMessages struct {
 	Role    string          `json:"role,omitempty"`
-	Content []ClaudeContent `json:"content,omitempty"`
+	Content []VisionContent `json:"content,omitempty"`
 }
 
-type ClaudeContent struct {
+type VisionContent struct {
 	Type   string        `json:"type,omitempty"`
-	Source *ClaudeSource `json:"source,omitempty"`
+	Source *VisionSource `json:"source,omitempty"`
 	Text   string        `json:"text,omitempty"`
 }
 
-type ClaudeSource struct {
+type VisionSource struct {
 	Type      string `json:"type,omitempty"`
 	MediaType string `json:"media_type,omitempty"`
 	Data      string `json:"data,omitempty"`
 }
 
-type ClaudeResponse struct {
+type ChatResponse struct {
 	ID           string `json:"id"`
 	Type         string `json:"type"`
 	Role         string `json:"role"`
@@ -120,40 +120,33 @@ func ChatMessages(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 	// var haveImages bool
 
 	usagelog := store.Tokens{Model: chatReq.Model}
-	var claudReq ClaudeRequest
+	var claudReq ChatRequest
 	claudReq.Model = chatReq.Model
 	claudReq.Stream = chatReq.Stream
 	claudReq.Temperature = chatReq.Temperature
 	claudReq.TopP = chatReq.TopP
 	claudReq.MaxTokens = 4096
 
-	var msgs []any
 	var prompt string
+
+	var claudecontent []VisionContent
 	for _, msg := range chatReq.Messages {
 		if msg.Role == "system" {
 			claudReq.System = string(msg.Content)
 			continue
 		}
 
-		var visioncontent []openai.VisionContent
-		if err := json.Unmarshal(msg.Content, &visioncontent); err != nil {
+		var oaivisioncontent []openai.VisionContent
+		if err := json.Unmarshal(msg.Content, &oaivisioncontent); err != nil {
 			prompt += "<" + msg.Role + ">: " + string(msg.Content) + "\n"
 
-			var claudemsgs ClaudeMessages
-			claudemsgs.Role = msg.Role
-			claudemsgs.Content = string(msg.Content)
-			msgs = append(msgs, claudemsgs)
-
+			claudecontent = append(claudecontent, VisionContent{Type: "text", Text: msg.Role + ":" + string(msg.Content)})
 		} else {
-			if len(visioncontent) > 0 {
-				var visionMessage VisionMessages
-				visionMessage.Role = msg.Role
-
-				for _, content := range visioncontent {
-					var claudecontent []ClaudeContent
+			if len(oaivisioncontent) > 0 {
+				for _, content := range oaivisioncontent {
 					if content.Type == "text" {
 						prompt += "<" + msg.Role + ">: " + content.Text + "\n"
-						claudecontent = append(claudecontent, ClaudeContent{Type: "text", Text: content.Text})
+						claudecontent = append(claudecontent, VisionContent{Type: "text", Text: msg.Role + ":" + content.Text})
 					} else if content.Type == "image_url" {
 						if strings.HasPrefix(content.ImageURL.URL, "http") {
 							fmt.Println("链接:", content.ImageURL.URL)
@@ -168,22 +161,18 @@ func ChatMessages(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 						if strings.HasPrefix(content.ImageURL.URL, "data:image/png") {
 							mediaType = "image/png"
 						}
-						claudecontent = append(claudecontent, ClaudeContent{Type: "image", Source: &ClaudeSource{Type: "base64", MediaType: mediaType, Data: strings.Split(content.ImageURL.URL, ",")[1]}})
-						// haveImages = true
-
+						claudecontent = append(claudecontent, VisionContent{Type: "image", Source: &VisionSource{Type: "base64", MediaType: mediaType, Data: strings.Split(content.ImageURL.URL, ",")[1]}})
 					}
-					visionMessage.Content = claudecontent
 				}
-				msgs = append(msgs, visionMessage)
+
 			}
 		}
-		claudReq.Messages = msgs
-
 		// if len(chatReq.Tools) > 0 {
 		// 	tooljson, _ := json.Marshal(chatReq.Tools)
 		// 	prompt += "<tools>: " + string(tooljson) + "\n"
 		// }
 	}
+	claudReq.Messages = []VisionMessages{{Role: "user", Content: claudecontent}}
 
 	usagelog.PromptCount = tokenizer.NumTokensFromStr(prompt, chatReq.Model)
 
