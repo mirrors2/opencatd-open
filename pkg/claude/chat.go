@@ -117,7 +117,12 @@ type ClaudeStreamResponse struct {
 }
 
 func ChatMessages(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
-	// var haveImages bool
+
+	onekey, err := store.SelectKeyCache("openai")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	usagelog := store.Tokens{Model: chatReq.Model}
 	var claudReq ChatRequest
@@ -177,6 +182,10 @@ func ChatMessages(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 	usagelog.PromptCount = tokenizer.NumTokensFromStr(prompt, chatReq.Model)
 
 	req, _ := http.NewRequest("POST", MessageEndpoint, strings.NewReader(fmt.Sprintf("%v", bytes.NewReader(claudReq.ByteJson()))))
+	req.Header.Set("x-api-key", onekey.Key)
+	req.Header.Set("anthropic-version", "2023-06-01")
+	req.Header.Set("Content-Type", "application/json")
+
 	client := http.DefaultClient
 	rsp, err := client.Do(req)
 	if err != nil {
