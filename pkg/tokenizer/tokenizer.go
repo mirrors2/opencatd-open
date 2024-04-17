@@ -83,17 +83,17 @@ func Cost(model string, promptCount, completionCount int) float64 {
 	switch model {
 	case "gpt-3.5-turbo-0301":
 		cost = 0.002 * float64((prompt+completion)/1000)
-	case "gpt-3.5-turbo", "gpt-3.5-turbo-0613", "gpt-3.5-turbo-1106":
+	case "gpt-3.5-turbo", "gpt-3.5-turbo-0613", "gpt-3.5-turbo-1106", "gpt-3.5-turbo-0125":
 		cost = 0.0015*float64((prompt)/1000) + 0.002*float64(completion/1000)
 	case "gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613":
 		cost = 0.003*float64((prompt)/1000) + 0.004*float64(completion/1000)
-	case "gpt-3.5-turbo-instruct", "gpt-3.5-turbo-instruct-0914":
-		cost = 0.0015*float64((prompt)/1000) + 0.002*float64(completion/1000)
 	case "gpt-4", "gpt-4-0613", "gpt-4-0314":
 		cost = 0.03*float64(prompt/1000) + 0.06*float64(completion/1000)
 	case "gpt-4-32k", "gpt-4-32k-0314", "gpt-4-32k-0613":
 		cost = 0.06*float64(prompt/1000) + 0.12*float64(completion/1000)
-	case "gpt-4-1106-preview", "gpt-4-vision-preview":
+	case "gpt-4-1106-preview", "gpt-4-vision-preview", "gpt-4-0125-preview", "gpt-4-turbo-preview":
+		cost = 0.01*float64(prompt/1000) + 0.03*float64(completion/1000)
+	case "gpt-4-turbo", "gpt-4-turbo-2024-04-09":
 		cost = 0.01*float64(prompt/1000) + 0.03*float64(completion/1000)
 	case "whisper-1":
 		// 0.006$/min
@@ -126,12 +126,43 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = float64(0.12 * completion)
 
 	// claude /million tokens
+	// https://aws.amazon.com/cn/bedrock/pricing/
 	case "claude-v1", "claude-v1-100k":
 		cost = 11.02/1000000*float64(prompt) + (32.68/1000000)*float64(completion)
 	case "claude-instant-v1", "claude-instant-v1-100k":
 		cost = (1.63/1000000)*float64(prompt) + (5.51/1000000)*float64(completion)
 	case "claude-2", "claude-2.1":
-		cost = (11.02/1000000)*float64(prompt) + (32.68/1000000)*float64(completion)
+		cost = (8.0/1000000)*float64(prompt) + (24.0/1000000)*float64(completion)
+	case "claude-3-haiku":
+		cost = (0.00025/1000)*float64(prompt) + (0.00125/1000)*float64(completion)
+	case "claude-3-sonnet":
+		cost = (0.003/1000)*float64(prompt) + (0.015/1000)*float64(completion)
+	case "claude-3-opus":
+		cost = (0.015/1000)*float64(prompt) + (0.075/1000)*float64(completion)
+	case "claude-3-haiku-20240307":
+		cost = (0.00025/1000)*float64(prompt) + (0.00125/1000)*float64(completion)
+	case "claude-3-sonnet-20240229":
+		cost = (0.003/1000)*float64(prompt) + (0.015/1000)*float64(completion)
+	case "claude-3-opus-20240229":
+		cost = (0.015/1000)*float64(prompt) + (0.075/1000)*float64(completion)
+
+	// google
+	// https://ai.google.dev/pricing?hl=zh-cn
+	case "gemini-pro":
+		cost = (0.000125/1000)*float64(prompt) + (0.000375/1000)*float64(completion)
+	case "gemini-pro-vision":
+		cost = (0.000125/1000)*float64(prompt) + (0.000375/1000)*float64(completion)
+	case "gemini-1.5-pro-latest":
+		cost = (0.00025/1000)*float64(prompt) + (0.0005/1000)*float64(completion)
+
+		// Mistral AI
+	case "mistral-small-latest":
+		cost = (0.002/1000)*float64(prompt) + (0.006/1000)*float64(completion)
+	case "mistral-medium-latest":
+		cost = (0.0027/1000)*float64(prompt) + (0.0081/1000)*float64(completion)
+	case "mistral-large-latest":
+		cost = (0.008/1000)*float64(prompt) + (0.024/1000)*float64(completion)
+
 	default:
 		if strings.Contains(model, "gpt-3.5-turbo") {
 			cost = 0.003 * float64((prompt+completion)/1000)

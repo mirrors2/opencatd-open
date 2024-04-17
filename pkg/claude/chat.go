@@ -197,8 +197,8 @@ func ChatMessages(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 		io.Copy(c.Writer, rsp.Body)
 		return
 	}
-
-	teeReader := io.TeeReader(rsp.Body, c.Writer)
+	var buffer bytes.Buffer
+	teeReader := io.TeeReader(rsp.Body, &buffer)
 
 	dataChan := make(chan string)
 	// stopChan := make(chan bool)
@@ -245,10 +245,6 @@ func ChatMessages(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 				dataChan <- "data: " + string(chatResp.ByteJson()) + "\n"
 				if claudeResp.Delta.StopReason != "" {
 					dataChan <- "\ndata: [DONE]\n"
-				}
-			} else {
-				if !bytes.HasPrefix(line, []byte("event:")) {
-					dataChan <- string(line) + "\n"
 				}
 			}
 		}
