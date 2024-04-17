@@ -49,6 +49,11 @@ func SelectKeyCache(apitype string) (Key, error) {
 		if item.Object.(Key).ApiType == apitype {
 			keys = append(keys, item.Object.(Key))
 		}
+		if apitype == "openai" {
+			if item.Object.(Key).ApiType == "azure" {
+				keys = append(keys, item.Object.(Key))
+			}
+		}
 	}
 	if len(keys) == 0 {
 		return Key{}, errors.New("No key found")
