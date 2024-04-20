@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"opencatd-open/pkg/claude"
+	"opencatd-open/pkg/google"
 	"opencatd-open/pkg/openai"
 
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,11 @@ func ChatHandler(c *gin.Context) {
 
 	if strings.HasPrefix(chatreq.Model, "claude") {
 		claude.ChatProxy(c, &chatreq)
+		return
+	}
+
+	if strings.HasPrefix(chatreq.Model, "gemini") {
+		google.ChatProxy(c, &chatreq)
 		return
 	}
 }
