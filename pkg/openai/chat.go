@@ -328,3 +328,8 @@ type ErrResponse struct {
 		Code    string `json:"code"`
 	} `json:"error"`
 }
+
+func (e *ErrResponse) ByteJson() []byte {
+	bytejson, _ := json.Marshal(e)
+	return bytejson
+}
