@@ -325,6 +325,29 @@ func HandleAddKey(c *gin.Context) {
 			}})
 			return
 		}
+	} else if strings.HasPrefix(body.Name, "google.") {
+		keynames := strings.Split(body.Name, ".")
+		if len(keynames) < 2 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{
+				"message": "Invalid Key Name",
+			}})
+			return
+		}
+
+		k := &store.Key{
+			// ApiType:      "anthropic",
+			ApiType:      "google",
+			Name:         body.Name,
+			Key:          body.Key,
+			ResourceNmae: keynames[1],
+			EndPoint:     body.Endpoint,
+		}
+		if err := store.CreateKey(k); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{
+				"message": err.Error(),
+			}})
+			return
+		}
 	} else {
 		if body.ApiType == "" {
 			if err := store.AddKey("openai", body.Key, body.Name); err != nil {

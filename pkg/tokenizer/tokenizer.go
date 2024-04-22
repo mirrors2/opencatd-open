@@ -155,7 +155,8 @@ func Cost(model string, promptCount, completionCount int) float64 {
 	case "gemini-1.5-pro-latest":
 		cost = (0.00025/1000)*float64(prompt) + (0.0005/1000)*float64(completion)
 
-		// Mistral AI
+	// Mistral AI
+	// https://docs.mistral.ai/platform/pricing/
 	case "mistral-small-latest":
 		cost = (0.002/1000)*float64(prompt) + (0.006/1000)*float64(completion)
 	case "mistral-medium-latest":
