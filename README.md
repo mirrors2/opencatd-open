@@ -18,6 +18,7 @@ OpenCat for Team的开源实现
 | --- | --- |
 |[Azure OpenAI](./doc/azure.md) | ✅|
 |[Claude](./doc/azure.md) | ✅|
+|[Gemini](./doc/gemini.md) | ✅|
 | ... | ... |
 
 
