@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"opencatd-open/pkg/openai"
 	"opencatd-open/pkg/tokenizer"
@@ -179,12 +180,15 @@ func ChatProxy(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 
 				var chatResp openai.ChatCompletionStreamResponse
 				chatResp.Model = chatReq.Model
-				chatResp.Choices[0].FinishReason = "stop"
+				choice := openai.Choice{}
+				choice.FinishReason = "stop"
+				chatResp.Choices = append(chatResp.Choices, choice)
 				datachan <- "data: " + string(chatResp.ByteJson())
 				close(datachan)
 				break
 			}
 			if err != nil {
+				log.Println(err)
 				var errResp openai.ErrResponse
 				errResp.Error.Code = "500"
 				errResp.Error.Message = err.Error()
@@ -204,8 +208,11 @@ func ChatProxy(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 
 			var chatResp openai.ChatCompletionStreamResponse
 			chatResp.Model = chatReq.Model
-			chatResp.Choices[0].Delta.Role = resp.Candidates[0].Content.Role
-			chatResp.Choices[0].Delta.Content = content
+			choice := openai.Choice{}
+			choice.Delta.Role = resp.Candidates[0].Content.Role
+			choice.Delta.Content = content
+			chatResp.Choices = append(chatResp.Choices, choice)
+
 			chunk := "data: " + string(chatResp.ByteJson()) + "\n\n"
 			datachan <- chunk
 		}
