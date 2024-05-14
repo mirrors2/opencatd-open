@@ -95,6 +95,8 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = 0.01*float64(prompt/1000) + 0.03*float64(completion/1000)
 	case "gpt-4-turbo", "gpt-4-turbo-2024-04-09":
 		cost = 0.01*float64(prompt/1000) + 0.03*float64(completion/1000)
+	case "gpt-4o", "gpt-4o-2024-05-13":
+		cost = 0.005*float64(prompt/1000) + 0.015*float64(completion/1000)
 	case "whisper-1":
 		// 0.006$/min
 		cost = 0.006 * float64(prompt+completion) / 60
