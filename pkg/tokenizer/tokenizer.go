@@ -151,11 +151,13 @@ func Cost(model string, promptCount, completionCount int) float64 {
 	// google
 	// https://ai.google.dev/pricing?hl=zh-cn
 	case "gemini-pro":
-		cost = (0.000125/1000)*float64(prompt) + (0.000375/1000)*float64(completion)
+		cost = (0.0005/1000)*float64(prompt) + (0.0015/1000)*float64(completion)
 	case "gemini-pro-vision":
-		cost = (0.000125/1000)*float64(prompt) + (0.000375/1000)*float64(completion)
+		cost = (0.0005/1000)*float64(prompt) + (0.0015/1000)*float64(completion)
 	case "gemini-1.5-pro-latest":
-		cost = (0.00025/1000)*float64(prompt) + (0.0005/1000)*float64(completion)
+		cost = (0.0035/1000)*float64(prompt) + (0.0105/1000)*float64(completion)
+	case "gemini-1.5-flash-latest":
+		cost = (0.00035/1000)*float64(prompt) + (0.00053/1000)*float64(completion)
 
 	// Mistral AI
 	// https://docs.mistral.ai/platform/pricing/
