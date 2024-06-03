@@ -11,6 +11,7 @@ package search
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -27,6 +28,8 @@ var subscriptionKey string
 func init() {
 	if os.Getenv("bing") != "" {
 		subscriptionKey = os.Getenv("bing")
+	} else {
+		log.Println("bing key not found")
 	}
 }
 
