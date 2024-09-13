@@ -2,14 +2,11 @@ package store
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"opencatd-open/pkg/vertexai"
 	"os"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 func init() {
@@ -27,15 +24,9 @@ func init() {
 			Key:       vertex_auth,
 			ApiSecret: vertex_auth,
 		}
-		if err := db.Table("keys").Where("name = ?", Vertex.ProjectID).Find(&key).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				if err := db.Create(&key).Error; err != nil {
-					log.Fatalln(fmt.Errorf("import vertex_auth json error: %w", err))
-				}
-			} else {
-				log.Fatalln(fmt.Errorf("import vertex_auth json error: %w", err))
-				return
-			}
+		if err := db.Where("name = ?", Vertex.ProjectID).FirstOrCreate(&key).Error; err != nil {
+			log.Fatalln(fmt.Errorf("import vertex_auth json error: %w", err))
+			return
 		}
 	}
 	LoadKeysCache()
