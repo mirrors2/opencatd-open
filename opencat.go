@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"opencatd-open/pkg/team"
 	"opencatd-open/router"
 	"opencatd-open/store"
 	"os"
@@ -143,41 +144,29 @@ func main() {
 	r := gin.Default()
 	group := r.Group("/1")
 	{
-		group.Use(router.AuthMiddleware())
+		group.Use(team.AuthMiddleware())
 
 		// 获取当前用户信息
-		group.GET("/me", router.HandleMe)
+		group.GET("/me", team.HandleMe)
+		group.GET("/me/usages", team.HandleMeUsage)
 
-		group.GET("/me/usages", router.HandleMeUsage)
+		group.GET("/keys", team.HandleKeys)          // 获取所有Key
+		group.POST("/keys", team.HandleAddKey)       // 添加Key
+		group.DELETE("/keys/:id", team.HandleDelKey) // 删除Key
 
-		// 获取所有Key
-		group.GET("/keys", router.HandleKeys)
+		group.GET("/users", team.HandleUsers)          // 获取所有用户信息
+		group.POST("/users", team.HandleAddUser)       // 添加用户
+		group.DELETE("/users/:id", team.HandleDelUser) // 删除用户
 
-		// 获取所有用户信息
-		group.GET("/users", router.HandleUsers)
-
-		group.GET("/usages", router.HandleUsage)
-
-		// 添加Key
-		group.POST("/keys", router.HandleAddKey)
-
-		// 删除Key
-		group.DELETE("/keys/:id", router.HandleDelKey)
-
-		// 添加用户
-		group.POST("/users", router.HandleAddUser)
-
-		// 删除用户
-		group.DELETE("/users/:id", router.HandleDelUser)
+		group.GET("/usages", team.HandleUsage)
 
 		// 重置用户Token
-		group.POST("/users/:id/reset", router.HandleResetUserToken)
+		group.POST("/users/:id/reset", team.HandleResetUserToken)
 	}
-
 	// 初始化用户
-	r.POST("/1/users/init", router.Handleinit)
+	r.POST("/1/users/init", team.Handleinit)
 
-	r.Any("/v1/*proxypath", router.HandleProy)
+	r.Any("/v1/*proxypath", router.HandleProxy)
 
 	// r.POST("/v1/chat/completions", router.HandleProy)
 	// r.GET("/v1/models", router.HandleProy)
@@ -188,7 +177,15 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	r.GET("/", gin.WrapH(http.FileServer(http.FS(idxFS))))
+	redirect := os.Getenv("CUSTOM_REDIRECT")
+	if redirect != "" {
+		r.GET("/", func(c *gin.Context) {
+			c.Redirect(http.StatusMovedPermanently, redirect)
+		})
+
+	} else {
+		r.GET("/", gin.WrapH(http.FileServer(http.FS(idxFS))))
+	}
 	assetsFS, err := fs.Sub(web, "dist/assets")
 	if err != nil {
 		panic(err)

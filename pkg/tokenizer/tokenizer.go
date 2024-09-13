@@ -97,8 +97,14 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = 0.01*float64(prompt/1000) + 0.03*float64(completion/1000)
 	case "gpt-4o", "gpt-4o-2024-05-13":
 		cost = 0.005*float64(prompt/1000) + 0.015*float64(completion/1000)
+	case "gpt-4o-2024-08-06":
+		cost = 0.0025*float64(prompt/1000) + 0.010*float64(completion/1000)
 	case "gpt-4o-mini", "gpt-4o-mini-2024-07-18":
 		cost = 0.00015*float64(prompt/1000) + 0.0006*float64(completion/1000)
+	case "o1-preview", "o1-preview-2024-09-12":
+		cost = 0.015*float64(prompt/1000) + 0.06*float64(completion/1000)
+	case "o1-mini", "o1-mini-2024-09-12":
+		cost = 0.003*float64(prompt/1000) + 0.012*float64(completion/1000)
 	case "whisper-1":
 		// 0.006$/min
 		cost = 0.006 * float64(prompt+completion) / 60
@@ -149,7 +155,8 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = (0.003/1000)*float64(prompt) + (0.015/1000)*float64(completion)
 	case "claude-3-opus-20240229":
 		cost = (0.015/1000)*float64(prompt) + (0.075/1000)*float64(completion)
-
+	case "claude-3-5-sonnet", "claude-3-5-sonnet-20240620":
+		cost = (0.003/1000)*float64(prompt) + (0.015/1000)*float64(completion)
 	// google
 	// https://ai.google.dev/pricing?hl=zh-cn
 	case "gemini-pro":

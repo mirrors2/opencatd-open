@@ -2,8 +2,34 @@ package store
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
+	"opencatd-open/pkg/vertexai"
+	"os"
 	"time"
 )
+
+func init() {
+	// check vertex
+	if os.Getenv("Vertex") != "" {
+		vertex_auth := os.Getenv("Vertex")
+		var Vertex vertexai.VertexSecretKey
+		if err := json.Unmarshal([]byte(vertex_auth), &Vertex); err != nil {
+			log.Fatalln(err)
+			return
+		}
+		key := Key{
+			ApiType:   "vertex",
+			Name:      Vertex.ProjectID,
+			Key:       vertex_auth,
+			ApiSecret: vertex_auth,
+		}
+		if err := db.FirstOrCreate(&key).Error; err != nil {
+			log.Println(fmt.Errorf("create vertex key error: %v", err))
+		}
+	}
+	LoadKeysCache()
+}
 
 type Key struct {
 	ID             uint      `gorm:"primarykey" json:"id,omitempty"`
@@ -14,6 +40,7 @@ type Key struct {
 	EndPoint       string    `gorm:"column:endpoint"`
 	ResourceNmae   string    `gorm:"column:resource_name"`
 	DeploymentName string    `gorm:"column:deployment_name"`
+	ApiSecret      string    `gorm:"column:api_secret"`
 	CreatedAt      time.Time `json:"createdAt,omitempty"`
 	UpdatedAt      time.Time `json:"updatedAt,omitempty"`
 }

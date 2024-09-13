@@ -1,4 +1,7 @@
-# opencatd-open
+# ~~opencatd-open~~ [OpenTeam](https://github.com/mirrors2/opencatd-open)
+
+ 本项目即将更名，后续请关注 👉🏻 https://github.com/mirrors2/openteam
+
 
 <a title="Docker Image CI" target="_blank" href="https://github.com/mirrors2/opencatd-open/actions"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/mirrors2/opencatd-open/ci.yaml?label=Actions&logo=github&style=flat-square"></a>
 <a title="Docker Pulls" target="_blank" href="https://hub.docker.com/r/mirrors2/opencatd-open"><img src="https://img.shields.io/docker/pulls/mirrors2/opencatd-open.svg?logo=docker&label=docker&style=flat-square"></a>
@@ -14,11 +17,11 @@ OpenCat for Team的开源实现
 
 ## Extra Support:
 
-| 任务 | 完成情况 |
-| --- | --- |
-|[Azure OpenAI](./doc/azure.md) | ✅|
-|[Claude](./doc/azure.md) | ✅|
-|[Gemini](./doc/gemini.md) | ✅|
+| 🎯 | 🚧 |Extra Provider|
+| --- | --- | --- |
+|[OpenAI](./doc/azure.md) | ✅|Azure, Github Marketplace|
+|[Claude](./doc/azure.md) | ✅|VertexAI|
+|[Gemini](./doc/gemini.md) | ✅||
 | ... | ... |
 
 
@@ -80,6 +83,18 @@ wget https://github.com/mirrors2/opencatd-open/raw/main/docker/docker-compose.ym
   
 pandora for team
   - [pandora for team](./doc/pandora.md)
+
+如何自定义HOST地址? (仅OpenAI)
+  - 需修改环境变量，优先级递增
+  - Cloudflare AI Gateway地址 `AIGateWay_Endpoint=https://gateway.ai.cloudflare.com/v1/123456789/xxxx/openai/chat/completions`
+  - 自定义的endpoint `$CUSTOM_ENDPOINT=true &&  $OpenAI_Endpoint=https://your.domain/v1/chat/completions`
+  
+设置主页跳转地址?
+  - 修改环境变量 `CUSTOM_REDIRECT=https://your.domain`
+
+## 赞助
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD55?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/littlecjun)
+
 # License
 
-[GNU General Public License v3.0](License)
+[![GitHub License](https://img.shields.io/github/license/mirrors2/opencatd-open.svg?logo=github&style=flat-square)](https://github.com/mirrors2/opencatd-open/blob/main/License)

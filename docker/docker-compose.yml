@@ -1,10 +1,24 @@
 version: '3.7'
-services: 
+services:
   opencatd:
     image: mirrors2/opencatd-open
-    container_name: opencatd-open 
+    container_name: opencatd-open
     restart: unless-stopped
+    #network_mode: host
     ports:
       - 80:80
     volumes:
-      - /etc/opencatd:/app/db
+      - $PWD/db:/app/db
+    logging:
+      # driver: "json-file"
+      options:
+        max-size: 10m
+        max-file: 3
+    # environment:
+    #   Vertex: |
+    #     {
+    #       "type": "service_account",
+    #       "universe_domain": "googleapis.com"
+    #     }
+
+        

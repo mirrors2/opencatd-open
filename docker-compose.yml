@@ -1,0 +1,26 @@
+# Email: admin@example.com
+# Password: changeme
+version: '3'
+
+services:
+  npm:
+    image: jc21/nginx-proxy-manager
+    network_mode: host
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - $PWD/data:/data
+      - $PWD/www:/var/www
+      - $PWD/letsencrypt:/etc/letsencrypt
+    environment:
+      - "TZ=Asia/Shanghai" # set timezone, default UTC
+      - "PUID=1000" # set group id, default 0 (root)
+      - "PGID=1000"
+
+  # certbot:
+  #   image: certbot/certbot
+  #   volumes:
+  #     - $PWD/data/certbot/conf:/etc/letsencrypt
+  #     - $PWD/data/certbot/www:/var/www/certbot

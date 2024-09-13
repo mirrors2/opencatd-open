@@ -17,8 +17,10 @@ import (
 )
 
 const (
-	AzureApiVersion = "2024-02-01"
-	OpenAI_Endpoint = "https://api.openai.com/v1/chat/completions"
+	AzureApiVersion    = "2024-02-01"
+	BaseHost           = "api.openai.com"
+	OpenAI_Endpoint    = "https://api.openai.com/v1/chat/completions"
+	Github_Marketplace = "https://models.inference.ai.azure.com/chat/completions"
 )
 
 var (
@@ -204,6 +206,10 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 	var req *http.Request
 
 	switch onekey.ApiType {
+	case "github":
+		req, err = http.NewRequest(c.Request.Method, Github_Marketplace, bytes.NewReader(chatReq.ToByteJson()))
+		req.Header = c.Request.Header
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", onekey.Key))
 	case "azure":
 		var buildurl string
 		if onekey.EndPoint != "" {
@@ -215,15 +221,18 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 		req.Header = c.Request.Header
 		req.Header.Set("api-key", onekey.Key)
 	default:
+		req, err = http.NewRequest(c.Request.Method, OpenAI_Endpoint, bytes.NewReader(chatReq.ToByteJson()))
 		if onekey.EndPoint != "" { // 优先key的endpoint
 			req, err = http.NewRequest(c.Request.Method, onekey.EndPoint+c.Request.RequestURI, bytes.NewReader(chatReq.ToByteJson()))
-		} else {
-			if BaseURL != "" { // 其次BaseURL
-				req, err = http.NewRequest(c.Request.Method, BaseURL+c.Request.RequestURI, bytes.NewReader(chatReq.ToByteJson()))
-			} else { // 最后是gateway的endpoint
-				req, err = http.NewRequest(c.Request.Method, AIGateWay_Endpoint, bytes.NewReader(chatReq.ToByteJson()))
-			}
 		}
+		if AIGateWay_Endpoint != "" { // cloudflare gateway的endpoint
+			req, err = http.NewRequest(c.Request.Method, AIGateWay_Endpoint, bytes.NewReader(chatReq.ToByteJson()))
+		}
+		customEndpoint := os.Getenv("CUSTOM_ENDPOINT") // 最后是用户自定义的endpoint CUSTOM_ENDPOINT=true OpenAI_Endpoint
+		if customEndpoint == "true" && OpenAI_Endpoint != "" {
+			req, err = http.NewRequest(c.Request.Method, BaseURL, bytes.NewReader(chatReq.ToByteJson()))
+		}
+
 		req.Header = c.Request.Header
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", onekey.Key))
 	}

@@ -1,4 +1,4 @@
-FROM node:18.12.1-alpine3.16 AS frontend
+FROM node:20-alpine AS frontend
 WORKDIR /frontend-build
 COPY ./web/ .
 RUN npm install && npm run build && rm -rf node_modules 

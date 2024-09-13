@@ -68,8 +68,8 @@ import (
 )
 
 var (
-	ClaudeUrl       = "https://api.anthropic.com/v1/complete"
-	MessageEndpoint = "https://api.anthropic.com/v1/messages"
+	ClaudeUrl             = "https://api.anthropic.com/v1/complete"
+	ClaudeMessageEndpoint = "https://api.anthropic.com/v1/messages"
 )
 
 type MessageModule struct {

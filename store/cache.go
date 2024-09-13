@@ -53,6 +53,14 @@ func SelectKeyCache(apitype string) (Key, error) {
 			if item.Object.(Key).ApiType == "azure" {
 				keys = append(keys, item.Object.(Key))
 			}
+			if item.Object.(Key).ApiType == "github" {
+				keys = append(keys, item.Object.(Key))
+			}
+		}
+		if apitype == "claude" {
+			if item.Object.(Key).ApiType == "vertex" {
+				keys = append(keys, item.Object.(Key))
+			}
 		}
 	}
 	if len(keys) == 0 {
