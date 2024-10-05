@@ -59,7 +59,7 @@ func RealTimeProxy(c *gin.Context) {
 	}
 
 	conn := websocket.Dialer{
-		Proxy:            http.ProxyURL(&url.URL{Scheme: "http", Host: "127.0.0.1:7890"}),
+		// Proxy:            http.ProxyURL(&url.URL{Scheme: "http", Host: "127.0.0.1:7890"}),
 		HandshakeTimeout: 45 * time.Second,
 	}
 	openAIConn, _, err := conn.Dial(realtimeURL, headers)
