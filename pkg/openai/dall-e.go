@@ -33,7 +33,7 @@ type DallERequest struct {
 	ResponseFormat string `json:"response_format,omitempty"` // url or b64_json
 }
 
-func DalleHandler(c *gin.Context) {
+func DallEProxy(c *gin.Context) {
 
 	var dalleRequest DallERequest
 	if err := c.ShouldBind(&dalleRequest); err != nil {

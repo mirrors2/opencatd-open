@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	AzureApiVersion    = "2024-02-01"
+	// https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-preview-api-releases
+	AzureApiVersion    = "2024-06-01"
 	BaseHost           = "api.openai.com"
 	OpenAI_Endpoint    = "https://api.openai.com/v1/chat/completions"
 	Github_Marketplace = "https://models.inference.ai.azure.com/chat/completions"
@@ -65,6 +66,10 @@ type Tool struct {
 	Function *FunctionDefinition `json:"function,omitempty"`
 }
 
+type StreamOption struct {
+	IncludeUsage bool `json:"include_Usage,omitempty"`
+}
+
 type ChatCompletionRequest struct {
 	Model            string                  `json:"model"`
 	Messages         []ChatCompletionMessage `json:"messages"`
@@ -80,8 +85,10 @@ type ChatCompletionRequest struct {
 	User             string                  `json:"user,omitempty"`
 	// Functions        []FunctionDefinition       `json:"functions,omitempty"`
 	// FunctionCall     any                        `json:"function_call,omitempty"`
-	Tools []Tool `json:"tools,omitempty"`
+	Tools             []Tool `json:"tools,omitempty"`
+	ParallelToolCalls bool   `json:"parallel_tool_calls,omitempty"`
 	// ToolChoice any    `json:"tool_choice,omitempty"`
+	StreamOptions StreamOption `json:"stream_options,omitempty"`
 }
 
 func (c ChatCompletionRequest) ToByteJson() []byte {
@@ -194,10 +201,18 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 			prompt += "<tools>: " + string(tooljson) + "\n"
 		}
 	}
+	switch chatReq.Model {
+	case "gpt-4o", "gpt-4o-mini", "chatgpt-4o-latest":
+		chatReq.MaxTokens = 16384
+	}
+	if chatReq.Stream == true {
+		chatReq.StreamOptions.IncludeUsage = true
+	}
 
 	usagelog.PromptCount = tokenizer.NumTokensFromStr(prompt, chatReq.Model)
 
-	onekey, err := store.SelectKeyCache("openai")
+	// onekey, err := store.SelectKeyCache("openai")
+	onekey, err := store.SelectKeyCacheByModel(chatReq.Model)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

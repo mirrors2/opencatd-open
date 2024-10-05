@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/Sakurasan/to"
@@ -59,6 +60,37 @@ func SelectKeyCache(apitype string) (Key, error) {
 		}
 		if apitype == "claude" {
 			if item.Object.(Key).ApiType == "vertex" {
+				keys = append(keys, item.Object.(Key))
+			}
+		}
+	}
+	if len(keys) == 0 {
+		return Key{}, errors.New("No key found")
+	} else if len(keys) == 1 {
+		return keys[0], nil
+	}
+	rand.Seed(time.Now().UnixNano())
+	idx := rand.Intn(len(keys))
+	return keys[idx], nil
+}
+
+func SelectKeyCacheByModel(model string) (Key, error) {
+	var keys []Key
+	items := KeysCache.Items()
+	for _, item := range items {
+		if strings.HasPrefix(model, "gpt-") {
+			if item.Object.(Key).ApiType == "openai" {
+				keys = append(keys, item.Object.(Key))
+			}
+			if item.Object.(Key).ApiType == "azure" {
+				keys = append(keys, item.Object.(Key))
+			}
+			if item.Object.(Key).ApiType == "github" {
+				keys = append(keys, item.Object.(Key))
+			}
+		}
+		if strings.HasPrefix(model, "o1-") || model == "chatgpt-4o-latest" {
+			if item.Object.(Key).ApiType == "openai" {
 				keys = append(keys, item.Object.(Key))
 			}
 		}

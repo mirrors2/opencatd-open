@@ -95,16 +95,28 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = 0.01*float64(prompt/1000) + 0.03*float64(completion/1000)
 	case "gpt-4-turbo", "gpt-4-turbo-2024-04-09":
 		cost = 0.01*float64(prompt/1000) + 0.03*float64(completion/1000)
-	case "gpt-4o", "gpt-4o-2024-05-13":
+	// omni
+	case "gpt-4o", "gpt-4o-2024-08-06":
+		cost = 0.0025*float64(prompt/1000) + 0.01*float64(completion/1000)
+	case "gpt-4o-2024-05-13":
 		cost = 0.005*float64(prompt/1000) + 0.015*float64(completion/1000)
-	case "gpt-4o-2024-08-06":
-		cost = 0.0025*float64(prompt/1000) + 0.010*float64(completion/1000)
 	case "gpt-4o-mini", "gpt-4o-mini-2024-07-18":
 		cost = 0.00015*float64(prompt/1000) + 0.0006*float64(completion/1000)
+	case "chatgpt-4o-latest":
+		cost = 0.005*float64(prompt/1000) + 0.015*float64(completion/1000)
+	// o1
 	case "o1-preview", "o1-preview-2024-09-12":
 		cost = 0.015*float64(prompt/1000) + 0.06*float64(completion/1000)
 	case "o1-mini", "o1-mini-2024-09-12":
 		cost = 0.003*float64(prompt/1000) + 0.012*float64(completion/1000)
+	// Realtime API
+	// Audio*
+	// $0.1 / 1K input tokens
+	// $0.2 / 1K output tokens
+	case "gpt-4o-realtime-preview", "gpt-4o-realtime-preview-2024-10-01":
+		cost = 0.005*float64(prompt/1000) + 0.020*float64(completion/1000)
+	case "gpt-4o-realtime-preview.audio", "gpt-4o-realtime-preview-2024-10-01.audio":
+		cost = 0.1*float64(prompt/1000) + 0.2*float64(completion/1000)
 	case "whisper-1":
 		// 0.006$/min
 		cost = 0.006 * float64(prompt+completion) / 60

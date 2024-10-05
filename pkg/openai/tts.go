@@ -25,7 +25,7 @@ type SpeechRequest struct {
 	Voice string `json:"voice"`
 }
 
-func SpeechHandler(c *gin.Context) {
+func SpeechProxy(c *gin.Context) {
 	var chatreq SpeechRequest
 	if err := c.ShouldBindJSON(&chatreq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

@@ -93,12 +93,17 @@ func HandleProxy(c *gin.Context) {
 		return
 	}
 	if c.Request.URL.Path == "/v1/audio/speech" {
-		oai.SpeechHandler(c)
+		oai.SpeechProxy(c)
 		return
 	}
 
 	if c.Request.URL.Path == "/v1/images/generations" {
-		oai.DalleHandler(c)
+		oai.DallEProxy(c)
+		return
+	}
+
+	if c.Request.URL.Path == "/v1/realtime" {
+		oai.RealTimeProxy(c)
 		return
 	}
 
