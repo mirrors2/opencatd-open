@@ -95,12 +95,15 @@ func forwardMessages(ctx context.Context, src, dst *websocket.Conn) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			_, message, err := src.ReadMessage()
+			messageType, message, err := src.ReadMessage()
 			if err != nil {
+				if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+					return nil // 正常关闭，不报错
+				}
 				return err
 			}
 			log.Println("Received message:", string(message))
-			err = dst.WriteMessage(websocket.TextMessage, message)
+			err = dst.WriteMessage(messageType, message)
 			if err != nil {
 				return err
 			}
