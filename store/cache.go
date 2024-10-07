@@ -78,6 +78,14 @@ func SelectKeyCacheByModel(model string) (Key, error) {
 	var keys []Key
 	items := KeysCache.Items()
 	for _, item := range items {
+		if strings.Contains(model, "realtime") {
+			if item.Object.(Key).ApiType == "openai" {
+				keys = append(keys, item.Object.(Key))
+			}
+			if item.Object.(Key).ApiType == "azure" {
+				keys = append(keys, item.Object.(Key))
+			}
+		}
 		if strings.HasPrefix(model, "gpt-") {
 			if item.Object.(Key).ApiType == "openai" {
 				keys = append(keys, item.Object.(Key))

@@ -6,6 +6,8 @@
 <a title="Docker Image CI" target="_blank" href="https://github.com/mirrors2/opencatd-open/actions"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/mirrors2/opencatd-open/ci.yaml?label=Actions&logo=github&style=flat-square"></a>
 <a title="Docker Pulls" target="_blank" href="https://hub.docker.com/r/mirrors2/opencatd-open"><img src="https://img.shields.io/docker/pulls/mirrors2/opencatd-open.svg?logo=docker&label=docker&style=flat-square"></a>
 
+[![Telegram group](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.swo.moe%2Fstats%2Ftelegram%2FOpenTeamChat&query=count&color=2CA5E0&label=Telegram%20Group&logo=telegram&cacheSeconds=3600&style=flat-square)](https://t.me/OpenTeamChat) [![Telegram channel](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.swo.moe%2Fstats%2Ftelegram%2FOpenTeamLLM&query=count&color=2CA5E0&label=Telegram%20Channel&logo=telegram&cacheSeconds=3600&style=flat-square)](https://t.me/OpenTeamLLM) 
+
 opencatd-open is an open-source, team-shared service for ChatGPT API that can be safely shared with others for API usage.
 
 ---
@@ -91,6 +93,8 @@ pandora for team
   
 设置主页跳转地址?
   - 修改环境变量 `CUSTOM_REDIRECT=https://your.domain`
+## 获取更多信息
+[![TG](https://telegram.org/img/favicon.ico)](https://t.me/OpenTeamLLM)
 
 ## 赞助
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD55?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/littlecjun)
