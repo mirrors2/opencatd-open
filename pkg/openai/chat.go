@@ -205,9 +205,9 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 	case "gpt-4o", "gpt-4o-mini", "chatgpt-4o-latest":
 		chatReq.MaxTokens = 16384
 	}
-	if chatReq.Stream == true {
-		chatReq.StreamOptions.IncludeUsage = true
-	}
+	// if chatReq.Stream == true {
+	// 	chatReq.StreamOptions.IncludeUsage = true
+	// }
 
 	usagelog.PromptCount = tokenizer.NumTokensFromStr(prompt, chatReq.Model)
 
