@@ -31,6 +31,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -132,7 +133,14 @@ func exchangeJwtForAccessToken(signedJWT string) (string, error) {
 	data.Set("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
 	data.Set("assertion", signedJWT)
 
-	resp, err := http.PostForm(authURL, data)
+	client := http.DefaultClient
+	if os.Getenv("LOCAL_PROXY") != "" {
+		if proxyUrl, err := url.Parse(os.Getenv("LOCAL_PROXY")); err == nil {
+			client.Transport = &http.Transport{Proxy: http.ProxyURL(proxyUrl)}
+		}
+	}
+
+	resp, err := client.PostForm(authURL, data)
 	if err != nil {
 		return "", err
 	}

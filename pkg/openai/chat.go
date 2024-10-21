@@ -67,7 +67,7 @@ type Tool struct {
 }
 
 type StreamOption struct {
-	IncludeUsage bool `json:"include_Usage,omitempty"`
+	IncludeUsage bool `json:"include_usage,omitempty"`
 }
 
 type ChatCompletionRequest struct {
@@ -77,7 +77,7 @@ type ChatCompletionRequest struct {
 	Temperature      float64                 `json:"temperature,omitempty"`
 	TopP             float64                 `json:"top_p,omitempty"`
 	N                int                     `json:"n,omitempty"`
-	Stream           bool                    `json:"stream,omitempty"`
+	Stream           bool                    `json:"stream"`
 	Stop             []string                `json:"stop,omitempty"`
 	PresencePenalty  float64                 `json:"presence_penalty,omitempty"`
 	FrequencyPenalty float64                 `json:"frequency_penalty,omitempty"`
@@ -205,9 +205,9 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 	case "gpt-4o", "gpt-4o-mini", "chatgpt-4o-latest":
 		chatReq.MaxTokens = 16384
 	}
-	// if chatReq.Stream == true {
-	// 	chatReq.StreamOptions.IncludeUsage = true
-	// }
+	if chatReq.Stream {
+		chatReq.StreamOptions.IncludeUsage = true
+	}
 
 	usagelog.PromptCount = tokenizer.NumTokensFromStr(prompt, chatReq.Model)
 
