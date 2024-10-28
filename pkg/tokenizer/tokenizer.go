@@ -167,7 +167,7 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = (0.003/1000)*float64(prompt) + (0.015/1000)*float64(completion)
 	case "claude-3-opus-20240229":
 		cost = (0.015/1000)*float64(prompt) + (0.075/1000)*float64(completion)
-	case "claude-3-5-sonnet", "claude-3-5-sonnet-20240620":
+	case "claude-3-5-sonnet", "claude-3-5-sonnet-20240620", "claude-3-5-sonnet-20241022", "claude-3-5-sonnet-latest":
 		cost = (0.003/1000)*float64(prompt) + (0.015/1000)*float64(completion)
 	// google
 	// https://ai.google.dev/pricing?hl=zh-cn
