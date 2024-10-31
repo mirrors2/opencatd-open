@@ -96,6 +96,14 @@ var VertexClaudeModelMap = map[string]VertexClaudeModel{
 		Region:     "us-east5",
 		// Region:     "europe-west1",
 	},
+	"claude-3-5-sonnet-20241022": {
+		VertexName: "claude-3-5-sonnet-v2@20241022",
+		Region:     "us-east5",
+	},
+	"claude-3-5-sonnet-latest": { //可能没有容量,指向老模型
+		VertexName: "claude-3-5-sonnet@20240620",
+		Region:     "us-east5",
+	},
 }
 
 func createSignedJWT(email, privateKeyPEM string) (string, error) {
