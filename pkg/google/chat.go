@@ -1,3 +1,6 @@
+// https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/grounding-search-entry-points?authuser=2&hl=zh-cn
+//
+//	https://cloud.google.com/vertex-ai/docs/generative-ai/quotas-genai
 package google
 
 import (

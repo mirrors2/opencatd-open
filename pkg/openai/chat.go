@@ -88,7 +88,7 @@ type ChatCompletionRequest struct {
 	Tools             []Tool `json:"tools,omitempty"`
 	ParallelToolCalls bool   `json:"parallel_tool_calls,omitempty"`
 	// ToolChoice any    `json:"tool_choice,omitempty"`
-	StreamOptions StreamOption `json:"stream_options,omitempty"`
+	StreamOptions *StreamOption `json:"stream_options,omitempty"`
 }
 
 func (c ChatCompletionRequest) ToByteJson() []byte {
@@ -206,7 +206,7 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 		chatReq.MaxTokens = 16384
 	}
 	if chatReq.Stream {
-		chatReq.StreamOptions.IncludeUsage = true
+		chatReq.StreamOptions = &StreamOption{IncludeUsage: true}
 	}
 
 	usagelog.PromptCount = tokenizer.NumTokensFromStr(prompt, chatReq.Model)
