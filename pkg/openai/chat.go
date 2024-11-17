@@ -107,20 +107,20 @@ type ToolCall struct {
 }
 
 type ChatCompletionResponse struct {
-	ID      string `json:"id"`
-	Object  string `json:"object"`
-	Created int    `json:"created"`
-	Model   string `json:"model"`
+	ID      string `json:"id,omitempty"`
+	Object  string `json:"object,omitempty"`
+	Created int    `json:"created,omitempty"`
+	Model   string `json:"model,omitempty"`
 	Choices []struct {
-		Index   int `json:"index"`
+		Index   int `json:"index,omitempty"`
 		Message struct {
-			Role      string     `json:"role"`
-			Content   string     `json:"content"`
+			Role      string     `json:"role,omitempty"`
+			Content   string     `json:"content,omitempty"`
 			ToolCalls []ToolCall `json:"tool_calls,omitempty"`
-		} `json:"message"`
-		Logprobs     string `json:"logprobs"`
-		FinishReason string `json:"finish_reason"`
-	} `json:"choices"`
+		} `json:"message,omitempty"`
+		Logprobs     string `json:"logprobs,omitempty"`
+		FinishReason string `json:"finish_reason,omitempty"`
+	} `json:"choices,omitempty"`
 	Usage struct {
 		PromptTokens        int `json:"prompt_tokens,omitempty"`
 		CompletionTokens    int `json:"completion_tokens,omitempty"`
@@ -346,16 +346,10 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 			}
 
 		}
-		resp.Body = io.NopCloser(bytes.NewBuffer(body))
-
 		for k, v := range resp.Header {
 			c.Writer.Header().Set(k, v[0])
 		}
-		c.Writer.WriteHeader(resp.StatusCode)
-		_, err = io.Copy(c.Writer, resp.Body)
-		if err != nil {
-			log.Println(err)
-		}
+		c.JSON(http.StatusOK, opiResp)
 	}
 	usagelog.CompletionCount = tokenizer.NumTokensFromStr(result, chatReq.Model)
 	usagelog.Cost = fmt.Sprintf("%.6f", tokenizer.Cost(usagelog.Model, usagelog.PromptCount, usagelog.CompletionCount))
