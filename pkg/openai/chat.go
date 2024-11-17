@@ -273,16 +273,16 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 		return
 	}
 	defer resp.Body.Close()
-	c.Writer.WriteHeader(resp.StatusCode)
-	for key, value := range resp.Header {
-		for _, v := range value {
-			c.Writer.Header().Add(key, v)
-		}
-	}
-	teeReader := io.TeeReader(resp.Body, c.Writer)
 
 	var result string
 	if chatReq.Stream {
+		for key, value := range resp.Header {
+			for _, v := range value {
+				c.Writer.Header().Add(key, v)
+			}
+		}
+		c.Writer.WriteHeader(resp.StatusCode)
+		teeReader := io.TeeReader(resp.Body, c.Writer)
 		// 流式响应
 		scanner := bufio.NewScanner(teeReader)
 
@@ -318,15 +318,18 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 
 		}
 	} else {
+
 		// 处理非流式响应
-		body, err := io.ReadAll(teeReader)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println("Error reading response body:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		var opiResp ChatCompletionResponse
 		if err := json.Unmarshal(body, &opiResp); err != nil {
 			log.Println("Error parsing JSON:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		if opiResp.Choices != nil && len(opiResp.Choices) > 0 {
@@ -342,6 +345,16 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 				result += opiResp.Choices[0].Message.ToolCalls[0].Function.Arguments
 			}
 
+		}
+		resp.Body = io.NopCloser(bytes.NewBuffer(body))
+
+		for k, v := range resp.Header {
+			c.Writer.Header().Set(k, v[0])
+		}
+		c.Writer.WriteHeader(resp.StatusCode)
+		_, err = io.Copy(c.Writer, resp.Body)
+		if err != nil {
+			log.Println(err)
 		}
 	}
 	usagelog.CompletionCount = tokenizer.NumTokensFromStr(result, chatReq.Model)
