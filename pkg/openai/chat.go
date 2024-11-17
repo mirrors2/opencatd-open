@@ -53,6 +53,7 @@ type ChatCompletionMessage struct {
 	Role    string          `json:"role"`
 	Content json.RawMessage `json:"content"`
 	Name    string          `json:"name,omitempty"`
+	// MultiContent []VisionContent
 }
 
 type FunctionDefinition struct {
@@ -115,17 +116,27 @@ type ChatCompletionResponse struct {
 		Message struct {
 			Role      string     `json:"role"`
 			Content   string     `json:"content"`
-			ToolCalls []ToolCall `json:"tool_calls"`
+			ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 		} `json:"message"`
 		Logprobs     string `json:"logprobs"`
 		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
 	Usage struct {
-		PromptTokens     int `json:"prompt_tokens"`
-		CompletionTokens int `json:"completion_tokens"`
-		TotalTokens      int `json:"total_tokens"`
-	} `json:"usage"`
-	SystemFingerprint string `json:"system_fingerprint"`
+		PromptTokens        int `json:"prompt_tokens,omitempty"`
+		CompletionTokens    int `json:"completion_tokens,omitempty"`
+		TotalTokens         int `json:"total_tokens,omitempty"`
+		PromptTokensDetails struct {
+			CachedTokens int `json:"cached_tokens,omitempty"`
+			AudioTokens  int `json:"audio_tokens,omitempty"`
+		} `json:"prompt_tokens_details,omitempty"`
+		CompletionTokensDetails struct {
+			ReasoningTokens          int `json:"reasoning_tokens,omitempty"`
+			AudioTokens              int `json:"audio_tokens,omitempty"`
+			AcceptedPredictionTokens int `json:"accepted_prediction_tokens,omitempty"`
+			RejectedPredictionTokens int `json:"rejected_prediction_tokens,omitempty"`
+		} `json:"completion_tokens_details,omitempty"`
+	} `json:"usage,omitempty"`
+	SystemFingerprint string `json:"system_fingerprint,omitempty"`
 }
 
 type Choice struct {
@@ -304,13 +315,12 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 		// 处理非流式响应
 		body, err := io.ReadAll(teeReader)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			fmt.Println("Error reading response body:", err)
 			return
 		}
 		var opiResp ChatCompletionResponse
 		if err := json.Unmarshal(body, &opiResp); err != nil {
 			log.Println("Error parsing JSON:", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error parsing JSON," + err.Error()})
 			return
 		}
 		if opiResp.Choices != nil && len(opiResp.Choices) > 0 {
