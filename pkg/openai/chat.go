@@ -273,6 +273,12 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 		return
 	}
 	defer resp.Body.Close()
+	c.Writer.WriteHeader(resp.StatusCode)
+	for key, value := range resp.Header {
+		for _, v := range value {
+			c.Writer.Header().Add(key, v)
+		}
+	}
 	teeReader := io.TeeReader(resp.Body, c.Writer)
 
 	var result string
