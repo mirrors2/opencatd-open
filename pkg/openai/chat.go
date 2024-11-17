@@ -346,6 +346,9 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 			}
 
 		}
+		for k, v := range resp.Header {
+			c.Writer.Header().Set(k, v[0])
+		}
 
 		c.JSON(http.StatusOK, opiResp)
 	}
