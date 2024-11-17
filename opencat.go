@@ -14,7 +14,6 @@ import (
 	"os"
 
 	"github.com/duke-git/lancet/v2/fileutil"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -143,6 +142,7 @@ func main() {
 	}
 	port := os.Getenv("PORT")
 	r := gin.Default()
+	r.Use(team.CORS())
 	group := r.Group("/1")
 	{
 		group.Use(team.AuthMiddleware())
@@ -167,7 +167,7 @@ func main() {
 	// 初始化用户
 	r.POST("/1/users/init", team.Handleinit)
 
-	r.Any("/v1/*proxypath", cors.Default(), router.HandleProxy)
+	r.Any("/v1/*proxypath", router.HandleProxy)
 
 	// r.POST("/v1/chat/completions", router.HandleProy)
 	// r.GET("/v1/models", router.HandleProy)
