@@ -19,6 +19,9 @@ https://$LOCATION-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/
   "stream": true,
   "max_tokens": 4096
 }'
+
+quota:
+https://console.cloud.google.com/iam-admin/quotas?hl=zh-cn
 */
 
 package vertexai
