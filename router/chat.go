@@ -28,7 +28,7 @@ func ChatHandler(c *gin.Context) {
 		return
 	}
 
-	if strings.HasPrefix(chatreq.Model, "gemini") {
+	if strings.HasPrefix(chatreq.Model, "gemini") || strings.HasPrefix(chatreq.Model, "learnlm") {
 		google.ChatProxy(c, &chatreq)
 		return
 	}
