@@ -179,7 +179,9 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = (0.0035/1000)*float64(prompt) + (0.0105/1000)*float64(completion)
 	case "gemini-1.5-flash-latest":
 		cost = (0.00035/1000)*float64(prompt) + (0.00053/1000)*float64(completion)
-	case "learnlm-1.5-pro-experimental", " gemini-exp-1114", "gemini-exp-1121":
+	case "gemini-2.0-flash-exp":
+		cost = (0.00035/1000)*float64(prompt) + (0.00053/1000)*float64(completion)
+	case "learnlm-1.5-pro-experimental", " gemini-exp-1114", "gemini-exp-1121", "gemini-exp-1206":
 		cost = (0.00035/1000)*float64(prompt) + (0.00053/1000)*float64(completion)
 
 	// Mistral AI
