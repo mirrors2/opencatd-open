@@ -77,9 +77,6 @@ wget https://github.com/mirrors2/opencatd-open/raw/main/docker/docker-compose.ym
   - [Fly.io](https://fly.io/)
   - 或者其他
 
-修改openai的endpoint地址？使用任意上游地址(套娃代理)
-  - 设置环境变量 openai_endpoint
-
 使用Nginx + Docker部署
   - [使用Nginx + Docker部署](./doc/deploy.md)
   
@@ -87,12 +84,13 @@ pandora for team
   - [pandora for team](./doc/pandora.md)
 
 如何自定义HOST地址? (仅OpenAI)
-  - 需修改环境变量，优先级递增
+  - 需修改环境变量，优先级递增(全局配置谨慎修改)
   - Cloudflare AI Gateway地址 `AIGateWay_Endpoint=https://gateway.ai.cloudflare.com/v1/123456789/xxxx/openai/chat/completions`
-  - 自定义的endpoint `$CUSTOM_ENDPOINT=true &&  $OpenAI_Endpoint=https://your.domain/v1/chat/completions`
+  - 自定义的endpoint `OpenAI_Endpoint=https://your.domain/v1/chat/completions`
   
 设置主页跳转地址?
   - 修改环境变量 `CUSTOM_REDIRECT=https://your.domain`
+  
 ## 获取更多信息
 [![TG](https://telegram.org/img/favicon.ico)](https://t.me/OpenTeamLLM)
 
