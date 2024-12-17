@@ -25,13 +25,13 @@ const (
 )
 
 var (
-	BaseURL            string // "https://api.openai.com"
-	AIGateWay_Endpoint = "https://gateway.ai.cloudflare.com/v1/431ba10f11200d544922fbca177aaa7f/openai/openai/chat/completions"
+	Custom_Endpoint    string
+	AIGateWay_Endpoint string // "https://gateway.ai.cloudflare.com/v1/431ba10f11200d544922fbca177aaa7f/openai/openai/chat/completions"
 )
 
 func init() {
 	if os.Getenv("OpenAI_Endpoint") != "" {
-		BaseURL = os.Getenv("OpenAI_Endpoint")
+		Custom_Endpoint = os.Getenv("OpenAI_Endpoint")
 	}
 	if os.Getenv("AIGateWay_Endpoint") != "" {
 		AIGateWay_Endpoint = os.Getenv("AIGateWay_Endpoint")
@@ -247,16 +247,16 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 		req.Header = c.Request.Header
 		req.Header.Set("api-key", onekey.Key)
 	default:
-		req, err = http.NewRequest(c.Request.Method, OpenAI_Endpoint, bytes.NewReader(chatReq.ToByteJson()))
-		if onekey.EndPoint != "" { // 优先key的endpoint
-			req, err = http.NewRequest(c.Request.Method, onekey.EndPoint+c.Request.RequestURI, bytes.NewReader(chatReq.ToByteJson()))
-		}
+		req, err = http.NewRequest(c.Request.Method, OpenAI_Endpoint, bytes.NewReader(chatReq.ToByteJson())) // default endpoint
+
 		if AIGateWay_Endpoint != "" { // cloudflare gateway的endpoint
 			req, err = http.NewRequest(c.Request.Method, AIGateWay_Endpoint, bytes.NewReader(chatReq.ToByteJson()))
 		}
-		customEndpoint := os.Getenv("CUSTOM_ENDPOINT") // 最后是用户自定义的endpoint CUSTOM_ENDPOINT=true OpenAI_Endpoint
-		if customEndpoint == "true" && OpenAI_Endpoint != "" {
-			req, err = http.NewRequest(c.Request.Method, BaseURL, bytes.NewReader(chatReq.ToByteJson()))
+		if Custom_Endpoint != "" { // 自定义endpoint
+			req, err = http.NewRequest(c.Request.Method, Custom_Endpoint, bytes.NewReader(chatReq.ToByteJson()))
+		}
+		if onekey.EndPoint != "" { // 优先key的endpoint
+			req, err = http.NewRequest(c.Request.Method, onekey.EndPoint+c.Request.RequestURI, bytes.NewReader(chatReq.ToByteJson()))
 		}
 
 		req.Header = c.Request.Header

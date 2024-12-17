@@ -2,22 +2,18 @@ package router
 
 import (
 	"crypto/tls"
-	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"opencatd-open/pkg/claude"
 	oai "opencatd-open/pkg/openai"
 	"opencatd-open/store"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 var (
-	baseUrl       = "https://api.openai.com"
 	GPT3Dot5Turbo = "gpt-3.5-turbo"
 	GPT4          = "gpt-4"
 )
@@ -61,13 +57,6 @@ var (
 // 		TotalTokens      int `json:"total_tokens"`
 // 	} `json:"usage"`
 // }
-
-func init() {
-	if openai_endpoint := os.Getenv("openai_endpoint"); openai_endpoint != "" {
-		log.Println(fmt.Sprintf("replace %s to %s", baseUrl, openai_endpoint))
-		baseUrl = openai_endpoint
-	}
-}
 
 func HandleProxy(c *gin.Context) {
 	var (
