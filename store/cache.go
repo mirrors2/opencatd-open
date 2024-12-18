@@ -97,7 +97,7 @@ func SelectKeyCacheByModel(model string) (Key, error) {
 				keys = append(keys, item.Object.(Key))
 			}
 		}
-		if strings.HasPrefix(model, "o1-") || model == "chatgpt-4o-latest" {
+		if strings.HasPrefix(model, "o1-") || strings.HasPrefix(model, "chatgpt-") {
 			if item.Object.(Key).ApiType == "openai" {
 				keys = append(keys, item.Object.(Key))
 			}
