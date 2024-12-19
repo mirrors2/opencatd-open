@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
@@ -76,6 +77,9 @@ func SelectKeyCache(apitype string) (Key, error) {
 
 func SelectKeyCacheByModel(model string) (Key, error) {
 	var keys []Key
+	if os.Getenv("OPENAI_API_KEY") != "" {
+		keys = append(keys, Key{ApiType: "openai", Key: os.Getenv("OPENAI_API_KEY")})
+	}
 	items := KeysCache.Items()
 	for _, item := range items {
 		if strings.Contains(model, "realtime") {

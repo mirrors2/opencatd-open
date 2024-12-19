@@ -50,9 +50,9 @@ type VisionImageURL struct {
 }
 
 type ChatCompletionMessage struct {
-	Role    string          `json:"role"`
-	Content json.RawMessage `json:"content"`
-	Name    string          `json:"name,omitempty"`
+	Role    string `json:"role"`
+	Content any    `json:"content"`
+	Name    string `json:"name,omitempty"`
 	// MultiContent []VisionContent
 }
 
@@ -185,27 +185,31 @@ func ChatProxy(c *gin.Context, chatReq *ChatCompletionRequest) {
 
 	var prompt string
 	for _, msg := range chatReq.Messages {
-		// prompt += "<" + msg.Role + ">: " + msg.Content + "\n"
-		var visioncontent []VisionContent
-		if err := json.Unmarshal(msg.Content, &visioncontent); err != nil {
-			prompt += "<" + msg.Role + ">: " + string(msg.Content) + "\n"
-		} else {
-			if len(visioncontent) > 0 {
-				for _, content := range visioncontent {
-					if content.Type == "text" {
-						prompt += "<" + msg.Role + ">: " + content.Text + "\n"
-					} else if content.Type == "image_url" {
-						if strings.HasPrefix(content.ImageURL.URL, "http") {
-							fmt.Println("链接:", content.ImageURL.URL)
-						} else if strings.HasPrefix(content.ImageURL.URL, "data:image") {
-							fmt.Println("base64:", content.ImageURL.URL[:20])
+		switch ct := msg.Content.(type) {
+		case string:
+			prompt += "<" + msg.Role + ">: " + msg.Content.(string) + "\n"
+		case []any:
+			for _, item := range ct {
+				if m, ok := item.(map[string]interface{}); ok {
+					if m["type"] == "text" {
+						prompt += "<" + msg.Role + ">: " + m["text"].(string) + "\n"
+					} else if m["type"] == "image_url" {
+						if url, ok := m["image_url"].(map[string]interface{}); ok {
+							fmt.Printf("  URL: %v\n", url["url"])
+							if strings.HasPrefix(url["url"].(string), "http") {
+								fmt.Println("网络图片:", url["url"].(string))
+							}
 						}
-						// todo image tokens
 					}
-
 				}
-
 			}
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": gin.H{
+					"message": "Invalid content type",
+				},
+			})
+			return
 		}
 		if len(chatReq.Tools) > 0 {
 			tooljson, _ := json.Marshal(chatReq.Tools)
