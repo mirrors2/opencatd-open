@@ -18,7 +18,7 @@ func ChatHandler(c *gin.Context) {
 		return
 	}
 
-	if strings.HasPrefix(chatreq.Model, "gpt") || strings.HasPrefix(chatreq.Model, "o1-") {
+	if strings.Contains(chatreq.Model, "gpt") || strings.HasPrefix(chatreq.Model, "o1-") {
 		openai.ChatProxy(c, &chatreq)
 		return
 	}
