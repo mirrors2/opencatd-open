@@ -97,59 +97,55 @@ func ChatProxy(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 	var prompts []genai.Part
 	var prompt string
 	for _, msg := range chatReq.Messages {
-		var visioncontent []openai.VisionContent
-		if err := json.Unmarshal(msg.Content, &visioncontent); err != nil {
-			prompt += "<" + msg.Role + ">: " + string(msg.Content) + "\n"
-			prompts = append(prompts, genai.Text("<"+msg.Role+">: "+string(msg.Content)))
-		} else {
-			if len(visioncontent) > 0 {
-				for _, content := range visioncontent {
-					if content.Type == "text" {
-						prompt += "<" + msg.Role + ">: " + content.Text + "\n"
-						prompts = append(prompts, genai.Text("<"+msg.Role+">: "+content.Text))
-					} else if content.Type == "image_url" {
-						if strings.HasPrefix(content.ImageURL.URL, "http") {
-							fmt.Println("链接:", content.ImageURL.URL)
-						} else if strings.HasPrefix(content.ImageURL.URL, "data:image") {
-							fmt.Println("base64:", content.ImageURL.URL[:20])
-							if chatReq.Model != "gemini-pro-vision" {
-								chatReq.Model = "gemini-pro-vision"
+		switch ct := msg.Content.(type) {
+		case string:
+			prompt += "<" + msg.Role + ">: " + msg.Content.(string) + "\n"
+			prompts = append(prompts, genai.Text("<"+msg.Role+">: "+msg.Content.(string)))
+		case []any:
+			for _, item := range ct {
+				if m, ok := item.(map[string]interface{}); ok {
+					if m["type"] == "text" {
+						prompt += "<" + msg.Role + ">: " + m["text"].(string) + "\n"
+						prompts = append(prompts, genai.Text("<"+msg.Role+">: "+m["text"].(string)))
+					} else if m["type"] == "image_url" {
+						if url, ok := m["image_url"].(map[string]interface{}); ok {
+							if strings.HasPrefix(url["url"].(string), "http") {
+								fmt.Println("网络图片:", url["url"].(string))
+							} else if strings.HasPrefix(url["url"].(string), "data:image") {
+								fmt.Println("base64:", url["url"].(string)[:20])
+								var mime string
+								// openai 会以 data:image 开头，则去掉 data:image/png;base64, 和 data:image/jpeg;base64,
+								if strings.HasPrefix(url["url"].(string), "data:image/png") {
+									mime = "image/png"
+								} else if strings.HasPrefix(url["url"].(string), "data:image/jpeg") {
+									mime = "image/jpeg"
+								} else {
+									c.JSON(http.StatusInternalServerError, gin.H{"error": "Unsupported image format"})
+									return
+								}
+								imageString := strings.Split(url["url"].(string), ",")[1]
+								imageBytes, err := base64.StdEncoding.DecodeString(imageString)
+								if err != nil {
+									c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+									return
+								}
+								prompts = append(prompts, genai.Blob{MIMEType: mime, Data: imageBytes})
 							}
-
-							var mime string
-							// openai 会以 data:image 开头，则去掉 data:image/png;base64, 和 data:image/jpeg;base64,
-							if strings.HasPrefix(content.ImageURL.URL, "data:image/png") {
-								mime = "image/png"
-							} else if strings.HasPrefix(content.ImageURL.URL, "data:image/jpeg") {
-								mime = "image/jpeg"
-							} else {
-								c.JSON(http.StatusInternalServerError, gin.H{"error": "Unsupported image format"})
-								return
-							}
-							imageString := strings.Split(content.ImageURL.URL, ",")[1]
-							imageBytes, err := base64.StdEncoding.DecodeString(imageString)
-							if err != nil {
-								c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-								return
-							}
-							prompts = append(prompts, genai.Blob{MIMEType: mime, Data: imageBytes})
 						}
-
-						// todo image tokens
 					}
-
 				}
-
 			}
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": gin.H{
+					"message": "Invalid content type",
+				},
+			})
+			return
 		}
 		if len(chatReq.Tools) > 0 {
 			tooljson, _ := json.Marshal(chatReq.Tools)
 			prompt += "<tools>: " + string(tooljson) + "\n"
-
-			// for _, tool := range chatReq.Tools {
-
-			// }
-
 		}
 	}
 
@@ -171,6 +167,7 @@ func ChatProxy(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 	defer client.Close()
 
 	model := client.GenerativeModel(chatReq.Model)
+	model.Tools = []*genai.Tool{}
 
 	iter := model.GenerateContentStream(ctx, prompts...)
 	datachan := make(chan string)

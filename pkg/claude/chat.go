@@ -143,51 +143,57 @@ func ChatMessages(c *gin.Context, chatReq *openai.ChatCompletionRequest) {
 		claudReq.Model = ""
 	}
 
-	var prompt string
-
 	var claudecontent []VisionContent
+	var prompt string
 	for _, msg := range chatReq.Messages {
-		if msg.Role == "system" {
-			claudReq.System = string(msg.Content)
-			continue
-		}
-
-		var oaivisioncontent []openai.VisionContent
-		if err := json.Unmarshal(msg.Content, &oaivisioncontent); err != nil {
-			prompt += "<" + msg.Role + ">: " + string(msg.Content) + "\n"
-
-			claudecontent = append(claudecontent, VisionContent{Type: "text", Text: msg.Role + ":" + string(msg.Content)})
-		} else {
-			if len(oaivisioncontent) > 0 {
-				for _, content := range oaivisioncontent {
-					if content.Type == "text" {
-						prompt += "<" + msg.Role + ">: " + content.Text + "\n"
-						claudecontent = append(claudecontent, VisionContent{Type: "text", Text: msg.Role + ":" + content.Text})
-					} else if content.Type == "image_url" {
-						if strings.HasPrefix(content.ImageURL.URL, "http") {
-							fmt.Println("链接:", content.ImageURL.URL)
-						} else if strings.HasPrefix(content.ImageURL.URL, "data:image") {
-							fmt.Println("base64:", content.ImageURL.URL[:20])
+		switch ct := msg.Content.(type) {
+		case string:
+			prompt += "<" + msg.Role + ">: " + msg.Content.(string) + "\n"
+			if msg.Role == "system" {
+				claudReq.System = msg.Content.(string)
+				continue
+			}
+			claudecontent = append(claudecontent, VisionContent{Type: "text", Text: msg.Role + ":" + msg.Content.(string)})
+		case []any:
+			for _, item := range ct {
+				if m, ok := item.(map[string]interface{}); ok {
+					if m["type"] == "text" {
+						prompt += "<" + msg.Role + ">: " + m["text"].(string) + "\n"
+						claudecontent = append(claudecontent, VisionContent{Type: "text", Text: msg.Role + ":" + m["text"].(string)})
+					} else if m["type"] == "image_url" {
+						if url, ok := m["image_url"].(map[string]interface{}); ok {
+							fmt.Printf("  URL: %v\n", url["url"])
+							if strings.HasPrefix(url["url"].(string), "http") {
+								fmt.Println("网络图片:", url["url"].(string))
+							} else if strings.HasPrefix(url["url"].(string), "data:image") {
+								fmt.Println("base64:", url["url"].(string)[:20])
+								var mediaType string
+								if strings.HasPrefix(url["url"].(string), "data:image/jpeg") {
+									mediaType = "image/jpeg"
+								}
+								if strings.HasPrefix(url["url"].(string), "data:image/png") {
+									mediaType = "image/png"
+								}
+								claudecontent = append(claudecontent, VisionContent{Type: "image", Source: &VisionSource{Type: "base64", MediaType: mediaType, Data: strings.Split(url["url"].(string), ",")[1]}})
+							}
 						}
-						// todo image tokens
-						var mediaType string
-						if strings.HasPrefix(content.ImageURL.URL, "data:image/jpeg") {
-							mediaType = "image/jpeg"
-						}
-						if strings.HasPrefix(content.ImageURL.URL, "data:image/png") {
-							mediaType = "image/png"
-						}
-						claudecontent = append(claudecontent, VisionContent{Type: "image", Source: &VisionSource{Type: "base64", MediaType: mediaType, Data: strings.Split(content.ImageURL.URL, ",")[1]}})
 					}
 				}
-
 			}
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": gin.H{
+					"message": "Invalid content type",
+				},
+			})
+			return
 		}
-		// if len(chatReq.Tools) > 0 {
-		// 	tooljson, _ := json.Marshal(chatReq.Tools)
-		// 	prompt += "<tools>: " + string(tooljson) + "\n"
-		// }
+		if len(chatReq.Tools) > 0 {
+			tooljson, _ := json.Marshal(chatReq.Tools)
+			prompt += "<tools>: " + string(tooljson) + "\n"
+		}
 	}
+
 	claudReq.Messages = []VisionMessages{{Role: "user", Content: claudecontent}}
 
 	usagelog.PromptCount = tokenizer.NumTokensFromStr(prompt, chatReq.Model)
