@@ -82,7 +82,7 @@ func SelectKeyCacheByModel(model string) (Key, error) {
 	}
 	items := KeysCache.Items()
 	for _, item := range items {
-		if strings.Contains(model, "realtime") {
+		if strings.Contains(model, "realtime") || strings.HasPrefix(model, "o1-") {
 			if item.Object.(Key).ApiType == "openai" {
 				keys = append(keys, item.Object.(Key))
 			}
@@ -101,7 +101,7 @@ func SelectKeyCacheByModel(model string) (Key, error) {
 				keys = append(keys, item.Object.(Key))
 			}
 		}
-		if strings.HasPrefix(model, "o1-") || strings.HasPrefix(model, "chatgpt-") {
+		if strings.HasPrefix(model, "chatgpt-") {
 			if item.Object.(Key).ApiType == "openai" {
 				keys = append(keys, item.Object.(Key))
 			}
