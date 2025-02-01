@@ -109,14 +109,24 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = 0.015*float64(prompt/1000) + 0.06*float64(completion/1000)
 	case "o1-mini", "o1-mini-2024-09-12":
 		cost = 0.003*float64(prompt/1000) + 0.012*float64(completion/1000)
-	// Realtime API
-	// Audio*
-	// $0.1 / 1K input tokens
-	// $0.2 / 1K output tokens
+	case "o3-mini", "o3-mini-2025-01-31":
+		cost = 0.003*float64(prompt/1000) + 0.012*float64(completion/1000)
+		// Realtime API
+		// Audio*
+		// $0.1 / 1K input tokens
+		// $0.2 / 1K output tokens
+	case "gpt-4o-audio-preview", "gpt-4o-audio-preview-2024-12-17":
+		cost = 0.0025*float64(prompt/1000) + 0.01*float64(completion/1000)
 	case "gpt-4o-realtime-preview", "gpt-4o-realtime-preview-2024-10-01":
 		cost = 0.005*float64(prompt/1000) + 0.020*float64(completion/1000)
 	case "gpt-4o-realtime-preview.audio", "gpt-4o-realtime-preview-2024-10-01.audio":
 		cost = 0.1*float64(prompt/1000) + 0.2*float64(completion/1000)
+
+	case "gpt-4o-mini-audio-preview", "gpt-4o-mini-audio-preview-2024-12-17":
+		cost = 0.00015*float64(prompt/1000) + 0.0006*float64(completion/1000)
+	case "gpt-4o-mini-realtime-preview", "gpt-4o-mini-realtime-preview-2024-12-17":
+		cost = 0.0006*float64(prompt/1000) + 0.0024*float64(completion/1000)
+
 	case "whisper-1":
 		// 0.006$/min
 		cost = 0.006 * float64(prompt+completion) / 60
@@ -183,7 +193,7 @@ func Cost(model string, promptCount, completionCount int) float64 {
 		cost = (0.00035/1000)*float64(prompt) + (0.00053/1000)*float64(completion)
 	case "gemini-2.0-flash-exp":
 		cost = (0.00035/1000)*float64(prompt) + (0.00053/1000)*float64(completion)
-	case "gemini-2.0-flash-thinking-exp-1219":
+	case "gemini-2.0-flash-thinking-exp-1219", "gemini-2.0-flash-thinking-exp-01-21":
 		cost = (0.00035/1000)*float64(prompt) + (0.00053/1000)*float64(completion)
 	case "learnlm-1.5-pro-experimental", " gemini-exp-1114", "gemini-exp-1121", "gemini-exp-1206":
 		cost = (0.00035/1000)*float64(prompt) + (0.00053/1000)*float64(completion)
